@@ -1,9 +1,19 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import psychologistQuotesData from '../data/knowledge/psychologistQuotes';
 import './Home.css';
+
+// 根据日期获取每日寄语
+function getDailyQuote() {
+  const quotes = psychologistQuotesData.dailyQuotes;
+  const today = new Date();
+  const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+  return quotes[dayOfYear % quotes.length];
+}
 
 export default function Home() {
   const { user } = useAuth();
+  const dailyQuote = getDailyQuote();
 
   return (
     <div className="home">
@@ -40,9 +50,14 @@ export default function Home() {
               <span className="stat-label">随时陪伴</span>
             </div>
             <div className="stat">
-              <span className="stat-number">11+</span>
+              <span className="stat-number">14+</span>
               <span className="stat-label">专业知识模块</span>
             </div>
+          </div>
+          <div className="daily-quote">
+            <span className="quote-icon">💡</span>
+            <p className="quote-text">"{dailyQuote.quote}"</p>
+            <span className="quote-author">—— {dailyQuote.author}</span>
           </div>
         </div>
         <div className="hero-visual">

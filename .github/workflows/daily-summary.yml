@@ -1,0 +1,69 @@
+name: Daily Project Summary
+
+on:
+  schedule:
+    # 每天北京时间8:00 (UTC 0:00)
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Daily Summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 获取昨天的日期
+          YESTERDAY=$(date -d "yesterday" +%Y-%m-%d)
+          TODAY=$(date +%Y-%m-%d)
+          
+          # 获取昨天的提交
+          COMMITS=$(git log --since="$YESTERDAY 00:00:00" --until="$TODAY 00:00:00" --pretty=format:"- %s (%h)" 2>/dev/null || echo "无提交记录")
+          
+          # 获取文件变更统计
+          CHANGES=$(git diff --stat HEAD~5 HEAD 2>/dev/null || echo "无变更统计")
+          
+          # 获取当前模块数量
+          MODULE_COUNT=$(grep -c "模块" src/data/knowledgeBase.js src/data/knowledge/*.js 2>/dev/null || echo "14+")
+          
+          # 生成总结
+          cat > summary.md << EOF
+          ## 📋 MindCare 每日项目总结 ($YESTERDAY)
+
+          ### 📝 昨日提交
+          $COMMITS
+
+          ### 📊 项目状态
+          - 知识库模块数: $MODULE_COUNT
+          - 最新部署: https://penny-gogo.github.io/mindcare-app/
+
+          ### ✅ 今日待办建议
+          - [ ] 检查昨日部署是否正常
+          - [ ] 审查知识库内容准确性
+          - [ ] 关注用户反馈和bug报告
+          - [ ] 考虑知识库内容更新（心理学新研究/新App/新文章）
+
+          ---
+          *此总结由 GitHub Actions 自动生成*
+          EOF
+
+      - name: Create Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          YESTERDAY=$(date -d "yesterday" +%Y-%m-%d)
+          gh issue create \
+            --title "📋 每日项目总结 - $YESTERDAY" \
+            --body-file summary.md \
+            --label "daily-summary" \
+            || echo "Issue creation skipped (label may not exist)"

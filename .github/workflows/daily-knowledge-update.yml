@@ -1,0 +1,88 @@
+name: Daily Knowledge Base Update
+
+on:
+  schedule:
+    # 每天北京时间2:00 (UTC 18:00前一天)
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update Knowledge Base
+        run: |
+          echo "🔄 每日知识库更新检查 - $(date +%Y-%m-%d)"
+          
+          # 检查是否有更新（此处为框架，实际更新逻辑可扩展）
+          # 可扩展方向：
+          # 1. 接入心理学RSS/API获取最新研究
+          # 2. 爬取高校心理中心最新文章
+          # 3. 获取心理App最新版本和功能
+          # 4. 更新每日寄语轮换顺序
+          
+          # 当前：更新每日寄语的日期种子
+          node -e "
+            const fs = require('fs');
+            const path = 'src/data/knowledge/psychologistQuotes.js';
+            let content = fs.readFileSync(path, 'utf8');
+            const today = new Date().toISOString().split('T')[0];
+            // 添加更新时间戳
+            if (content.includes('// lastUpdated:')) {
+              content = content.replace(/\/\/ lastUpdated:.*\n/, '// lastUpdated: ' + today + '\n');
+            } else {
+              content = '// lastUpdated: ' + today + '\n' + content;
+            }
+            fs.writeFileSync(path, content);
+            console.log('✅ 知识库时间戳已更新: ' + today);
+          "
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ 知识库无变更"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "✅ 检测到知识库变更"
+            git diff --stat
+          fi
+
+      - name: Commit and Push
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git commit -m "📚 daily: update knowledge base - $(date +%Y-%m-%d)"
+          git push
+
+      - name: Trigger Deploy
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          echo "🚀 知识库已更新，部署将由push事件自动触发"
+
+      - name: Build verification
+        run: |
+          npm run build
+          echo "✅ 构建验证通过"

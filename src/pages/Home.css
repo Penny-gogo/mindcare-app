@@ -115,6 +115,39 @@
   color: #888;
 }
 
+/* 每日寄语 */
+.daily-quote {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(74, 108, 247, 0.1);
+  text-align: center;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.daily-quote .quote-icon {
+  font-size: 18px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.daily-quote .quote-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #555;
+  font-style: italic;
+  margin: 0 0 8px;
+}
+
+.daily-quote .quote-author {
+  font-size: 12px;
+  color: #999;
+}
+
 .hero-visual {
   position: absolute;
   top: 0;

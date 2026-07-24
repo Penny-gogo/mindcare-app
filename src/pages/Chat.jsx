@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import knowledgeBase from '../data/knowledgeBase';
+import knowledgeBase from '../data/knowledge/index';
 import './Chat.css';
 
 const AI_NAME = '小暖';

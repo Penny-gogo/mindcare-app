@@ -1,0 +1,284 @@
+.counselors-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.counselors-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.counselors-header h1 {
+  font-size: 32px;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.counselors-header p {
+  font-size: 16px;
+  color: #888;
+}
+
+.counselors-filters {
+  margin-bottom: 32px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1.5px solid #e0e0e8;
+  border-radius: 12px;
+  padding: 4px 16px;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+
+.search-box:focus-within {
+  border-color: #4a6cf7;
+  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+}
+
+.search-icon {
+  font-size: 18px;
+  margin-right: 8px;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  padding: 12px 0;
+  font-size: 15px;
+  flex: 1;
+  background: transparent;
+}
+
+.filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filter-tag {
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1.5px solid #e0e0e8;
+  background: white;
+  color: #666;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-tag:hover {
+  border-color: #4a6cf7;
+  color: #4a6cf7;
+}
+
+.filter-tag.active {
+  background: #4a6cf7;
+  color: white;
+  border-color: #4a6cf7;
+}
+
+.available-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+}
+
+.available-filter input[type="checkbox"] {
+  accent-color: #4a6cf7;
+  width: 16px;
+  height: 16px;
+}
+
+.counselors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.counselor-list-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  text-decoration: none;
+  transition: all 0.3s;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f0f0f5;
+}
+
+.counselor-list-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(74, 108, 247, 0.1);
+  border-color: #4a6cf7;
+}
+
+.cl-card-left {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+}
+
+.cl-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cl-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #eef1ff;
+}
+
+.cl-online {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: #22c55e;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.cl-info h3 {
+  font-size: 18px;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.cl-title {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.cl-specialties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.cl-tag {
+  background: #f0f3ff;
+  color: #4a6cf7;
+  padding: 3px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+}
+
+.cl-bio {
+  font-size: 13px;
+  color: #999;
+  line-height: 1.5;
+}
+
+.cl-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 20px;
+}
+
+.cl-rating {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.cl-reviews {
+  font-size: 12px;
+  color: #999;
+}
+
+.cl-experience {
+  font-size: 12px;
+  color: #888;
+}
+
+.cl-price {
+  font-size: 22px;
+  font-weight: 700;
+  color: #4a6cf7;
+  margin: 4px 0;
+}
+
+.cl-price span {
+  font-size: 13px;
+  font-weight: 400;
+  color: #999;
+}
+
+.cl-book-btn {
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #4a6cf7, #6c5ce7);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cl-book-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 108, 247, 0.3);
+}
+
+.no-results {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.no-results-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.no-results p {
+  font-size: 16px;
+  color: #666;
+}
+
+.no-results-hint {
+  font-size: 14px;
+  color: #aaa;
+  margin-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .counselor-list-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cl-card-right {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-left: 0;
+    margin-top: 16px;
+    gap: 12px;
+  }
+
+  .cl-bio {
+    display: none;
+  }
+}

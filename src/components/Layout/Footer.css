@@ -1,0 +1,126 @@
+.footer {
+  background: #1a1a2e;
+  color: #ccc;
+  padding: 48px 24px 20px;
+  margin-top: auto;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 32px;
+}
+
+.footer-section h3 {
+  color: #fff;
+  font-size: 1rem;
+  margin-bottom: 16px;
+}
+
+.footer-desc {
+  font-size: 0.85rem;
+  color: #999;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.footer-academic {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.academic-label {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  background: rgba(76, 175, 80, 0.15);
+  color: #66BB6A;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.academic-name {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.footer-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.footer-section ul li {
+  margin-bottom: 8px;
+}
+
+.footer-section ul li a {
+  color: #aaa;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.footer-section ul li a:hover {
+  color: #4CAF50;
+}
+
+.hotline-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hotline-link {
+  color: #66BB6A !important;
+  font-weight: 600;
+  font-size: 0.95rem !important;
+  text-decoration: none;
+}
+
+.hotline-link:hover {
+  color: #81C784 !important;
+}
+
+.hotline-tag {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  background: rgba(76, 175, 80, 0.15);
+  color: #66BB6A;
+  border-radius: 3px;
+}
+
+.footer-bottom {
+  max-width: 1200px;
+  margin: 32px auto 0;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.footer-bottom p {
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.footer-note {
+  font-size: 0.75rem !important;
+  color: #666 !important;
+  margin-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .footer-container {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-container {
+    grid-template-columns: 1fr;
+  }
+}

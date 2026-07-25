@@ -5,6 +5,7 @@ import knowledgeBase from '../knowledgeBase';
 import psychologySchools from './psychologySchools';
 import psychologistQuotes from './psychologistQuotes';
 import mentalHealthApps from './mentalHealthApps';
+import academicExpansion from './academicExpansion';
 
 // 将新模块合并到知识库
 const enhancedKnowledgeBase = {
@@ -12,6 +13,7 @@ const enhancedKnowledgeBase = {
   psychologySchools,
   psychologistQuotes,
   mentalHealthApps,
+  academicExpansion,
 };
 
 export default enhancedKnowledgeBase;
@@ -29,6 +31,7 @@ export const moduleList = [
   { key: 'userContributed', name: '用户供稿区', type: 'community' },
   { key: 'selfHelpToolkit', name: '专业自助技巧体系', type: 'toolkit' },
   { key: 'academicResources', name: '高校学术权威资源', type: 'academic' },
+  { key: 'academicExpansion', name: '高校学术资源扩展（清华/复旦/浙大/武大/华南师大/华中师大）', type: 'academic' },
   { key: 'psychologySchools', name: '主流心理学技术流派', type: 'therapy' },
   { key: 'psychologistQuotes', name: '心理学家名人名言', type: 'reference' },
   { key: 'mentalHealthApps', name: '主流心理App评测', type: 'reference' },

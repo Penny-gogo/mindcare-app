@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import knowledgeBase from '../data/knowledge/index';
+import psychologySchools from '../data/knowledge/psychologySchools';
+import psychologistQuotes from '../data/knowledge/psychologistQuotes';
 import './Chat.css';
 
 const AI_NAME = '小暖';
@@ -113,6 +115,63 @@ const responsePatterns = [
       '华东师大的研究发现：拖延不是时间管理问题，而是情绪调节问题。我们拖延，往往是因为任务引发了负面情绪（焦虑、无聊、恐惧失败）。\n\n💡 试试「5分钟启动法」：告诉自己只做5分钟。大多数时候，一旦开始了，就会继续下去。因为启动的阻力远大于持续的阻力。',
       '拖延的时候，你可能会自责「我怎么又拖延了」。但自责只会让情绪更差，进而拖延更严重——这是一个恶性循环。\n\n试试对自己说：「我注意到自己在拖延，这很正常。让我看看，这个任务让我不舒服的地方是什么？」——从自责转向好奇，就能打破循环。'
     ]
+  },
+  // ===== 新增：流派深度关联回复模式 =====
+  {
+    keywords: ['家人', '父母', '家庭', '原生家庭', '妈妈', '爸爸', '婆媳', '亲子'],
+    responses: [
+      '家庭关系确实是最复杂也最深刻的联结。萨提亚模式告诉我们：你看到的冲突只是冰山一角，下面还有感受、期待和渴望。\n\n你觉得在这段关系中，你最渴望被理解的是什么？有时候，看清自己真正的需要，就能找到新的沟通方式。',
+      '家庭系统治疗发现：我们往往在不知不觉中重复着家庭中的互动模式。当你觉得「为什么总是这样」的时候，可能不只是一个人的问题，而是整个系统的互动方式在起作用。\n\n但这不代表你无法改变——你可以在你这一端做出不同的选择。你愿意和我说说具体的情况吗？',
+      '原生家庭对我们的影响确实很深。但请记住：理解不等于认同，看见模式不等于被它定义。\n\n💡 试试萨提亚的「冰山探索」：你看到的行为只是水面上的部分，水面下还有——你的感受是什么？你对感受的感受是什么？你的期待是什么？你内心最深的渴望是什么？'
+    ]
+  },
+  {
+    keywords: ['伴侣', '老公', '老婆', '爱人', '恋爱', '亲密关系', '分手', '离婚', '感情'],
+    responses: [
+      '亲密关系中的痛苦往往是最深的，因为你在乎这个人。萨提亚模式有个洞察：在亲密冲突中，我们常常在用「讨好」「指责」「超理智」或「打岔」来保护自己，但真正能解决问题的，是「一致性」——同时尊重自己、对方和情境。\n\n你现在最想被对方理解的是什么？',
+      '感情问题让人很煎熬。家庭系统治疗发现：很多亲密关系的冲突，其实是两个人在用各自的方式呼喊「看见我、爱我」。\n\n💡 试试用「我感受」句式表达：「当你……的时候，我感到……，因为我需要……」——这比指责更容易让对方听到你的心声。',
+      '无论发生了什么，你的感受都是真实的。叙事治疗提醒我们：你不是一个「失败的关系中的人」，你是一个正在经历关系挑战的人——这两个叙述很不一样。\n\n你愿意和我说说，在这段关系中，你最看重的是什么吗？'
+    ]
+  },
+  {
+    keywords: ['接纳', '放不下', '无法接受', '不想有这种感觉', '抗拒', '逃避', '回避'],
+    responses: [
+      '接纳不等于认同或放弃，接纳是「我承认这是现在的状态，然后看看我能做什么」。ACT接纳承诺疗法把这个叫做「为不适腾出空间」。\n\n想象你的焦虑是一个气球，它可以在你身边飘着——你不需要戳破它，也不需要抱着它，它可以在那里，你也可以继续走你的路。',
+      '我们常常花很多精力去对抗不舒服的感觉，但越对抗，它反而越强烈。ACT的「认知解离」练习可以试试：当你有「我受不了了」的想法时，改成说「我注意到我有一个『我受不了了』的想法」——仅仅是这个转换，就能拉开一点距离。\n\n你愿意试试看吗？',
+      '不想有某种感觉，这个心情本身就很正常。ACT创始人海斯说过：「你无法平息海浪，但你可以学会冲浪。」\n\n不是要你喜欢这种不舒服，而是看看能不能带着它，依然去做对你重要的事。对你来说，现在最重要的是什么？'
+    ]
+  },
+  {
+    keywords: ['标签', '定义', '我就是', '我这种人', '注定', '命运', '改不了', '天生'],
+    responses: [
+      '叙事治疗有一个核心理念：人不是问题，问题才是问题。当你说「我就是……的人」时，其实是在用一个标签覆盖了完整的自己。\n\n试试这个：不说「我很焦虑」，而说「焦虑又来找我聊天了」——把问题外化，你就不再是问题本身，而是面对问题的人。',
+      '「我就是这种人」——这个说法很常见，但叙事治疗会问：这是谁的故事？是你自己的，还是别人给你写的？\n\n也许你有焦虑的时候，但也有勇敢的时候；有犹豫的时候，但也有果断的时候。那些不被标签包含的部分，同样是你。',
+      '我们很容易被一个标签困住，但人远比任何标签都丰富。叙事治疗把这叫做「独特结果」——那些问题没有获胜的时刻。\n\n想想看，有没有什么时候，这个「标签」本来要出现，但你做了什么让它没有完全控制你？那个时刻的故事，也值得被讲述。'
+    ]
+  },
+  {
+    keywords: ['意义', '活着为什么', '人生', '存在', '虚无', '无意义', '找不到方向', '迷失'],
+    responses: [
+      '追问意义本身就很勇敢——很多人连这个问题都不敢面对。意义疗法创始人弗兰克尔说过：「在刺激与反应之间，有一个空间。在那个空间里，我们有选择自己反应的自由和力量。」\n\n也许现在的你正处于那个空间里。你不需要立刻找到答案，但你可以选择下一步往哪个方向走。',
+      '感到迷茫的时候，人本主义疗法不会给你一个标准答案，而是相信：你内心已经知道什么对你是重要的，只是可能被噪音盖住了。\n\n试试这个：如果不再被恐惧和焦虑困扰，你最想成为什么样的人？做什么样的事？——这个想象里藏着你的价值观。',
+      '存在主义的困惑没有简单的答案，但有一个方向可以试试：意义不是被找到的，是被创造的。维克多·弗兰克尔在集中营里发现——苦难本身不是意义，但你在苦难中的选择可以成为意义。\n\n你现在能做的最小的、对自己好的事情是什么？哪怕很小，也是意义的一部分。'
+    ]
+  },
+  {
+    keywords: ['情绪波动', '失控', '崩溃', '受不了', '大起大落', '暴怒', '冲动'],
+    responses: [
+      '情绪波动很大的时候，先让自己稳住是最重要的。DBT辩证行为疗法有个紧急降温技术TIPP：\n🧊 T-温度：用冷水洗脸或握冰块（激活哺乳动物潜水反射，快速降激活）\n🏃 I-剧烈运动：做20个开合跳（释放身体紧张）\n🫁 P-调节呼吸：延长呼气（激活副交感神经）\n💪 P-配对放松：紧握拳头5秒再松开\n\n先试试其中一个，让身体先稳定下来。',
+      '情绪崩溃的时候，不是你「太脆弱」，而是你的情绪系统在超负荷运转。DBT告诉我们：接纳现在的状态（不是认同它），同时寻找改变的可能。\n\n🧘 5-4-3-2-1接地练习：现在说出5个你看到的→4个你摸到的→3个你听到的→2个你闻到的→1个你尝到的。这能帮你从情绪风暴中回到当下。',
+      '情绪波动大不是你的错。DBT的创始人玛莎·莱恩汉自己就经历过严重的情绪失调，她从自己的痛苦中创造了这套方法。\n\n你现在最强烈的情绪是什么？试着给它命名——研究发现，仅仅是命名情绪，就能降低它的强度。然后我们再一起看看怎么应对。'
+    ]
+  },
+  {
+    keywords: ['总是', '反复', '又一次', '每次都', '老是这样', '又来了', '循环', '同样的错'],
+    responses: [
+      '「总是」「每次都」——当你注意到这种重复的时候，其实已经迈出了重要的一步。精神分析认为，反复出现的模式往往和无意识中的某种需要或未完成的议题有关。\n\n你有没有注意到，每次这个模式出现的时候，有什么共同点？也许不是运气不好，而是内心有一种模式在悄悄影响着选择。',
+      '反复遇到同样的问题，真的很让人沮丧。但注意到了「反复」本身，就是改变的开始——之前你可能都没发现这个模式。\n\n💡 试试自由联想：当你想到这个反复出现的问题时，脑海中浮现的第一个画面或记忆是什么？不用分析，只是观察——有时候答案藏在意识之外。',
+      '循环不是你的错。精神分析发现，我们往往在不知不觉中重复早年学到的关系模式——因为熟悉的东西，哪怕是痛苦的，也会让人感到「安全」。\n\n但觉察就是打破循环的第一步。你现在已经看到了这个模式，接下来就可以选择：在下一次它要出现的时候，做一点不同的选择。'
+    ]
   }
 ];
 
@@ -167,6 +226,143 @@ const selfCareTips = [
   '💡 【运动抗焦虑】哪怕只是10分钟的散步，也能明显改善情绪。运动是最天然的「抗焦虑药」，效果不输药物。'
 ];
 
+// ========== 流派智能匹配系统 ==========
+// 根据用户问题类型匹配最合适的心理学流派
+const schoolMatchingMap = {
+  // 焦虑类 → CBT + ACT
+  anxiety: {
+    keywords: ['焦虑', '不安', '担心', '紧张', '害怕', '恐惧', '恐慌', '强迫', '无法控制'],
+    schools: ['act', 'dbt'],
+    quoteScenarios: ['用户试图消除焦虑时', '用户感到无力时', '用户需要倾诉时'],
+  },
+  // 关系类 → 萨提亚 + 家庭系统
+  relationship: {
+    keywords: ['关系', '家人', '父母', '伴侣', '老公', '老婆', '婆媳', '亲子', '家庭', '亲密', '婚姻'],
+    schools: ['satir', 'familySystems'],
+    quoteScenarios: ['用户自我否定时', '用户需要倾诉时'],
+  },
+  // 存在困惑类 → 人本主义 + 意义疗法
+  existential: {
+    keywords: ['意义', '迷茫', '存在', '活着为什么', '人生', '自我', '认同', '我是谁', '找不到方向'],
+    schools: ['humanistic'],
+    quoteScenarios: ['用户自我否定时', '用户面临困境时', '用户追问人生意义时'],
+  },
+  // 情绪失调类 → DBT
+  emotionDysregulation: {
+    keywords: ['情绪波动', '失控', '崩溃', '暴怒', '冲动', '极端', '大起大落', '受不了'],
+    schools: ['dbt'],
+    quoteScenarios: ['用户试图消除焦虑时', '用户感到无力时'],
+  },
+  // 反复模式类 → 精神分析
+  repeatedPatterns: {
+    keywords: ['总是', '反复', '又一次', '每次都', '老是这样', '循环', '模式', '又来了'],
+    schools: ['psychoanalysis'],
+    quoteScenarios: ['用户压抑情绪时', '用户反复为某个决定纠结时'],
+  },
+  // 自我叙事类 → 叙事治疗
+  selfNarrative: {
+    keywords: ['我就是', '我这种人', '标签', '定义', '别人说我是', '我就是个', '我注定'],
+    schools: ['narrative'],
+    quoteScenarios: ['用户自我否定时', '用户追求完美时'],
+  },
+  // 目标行动类 → SFBT
+  goalAction: {
+    keywords: ['怎么办', '怎么做', '方法', '解决', '改变', '行动', '步骤', '计划', '目标'],
+    schools: ['sfbt'],
+    quoteScenarios: ['用户面临困境时'],
+  },
+  // 自我价值类 → 萨提亚 + 人本
+  selfWorth: {
+    keywords: ['不够好', '不配', '不值得', '自卑', '没价值', '看不起自己', '讨厌自己', '完美主义', '完美'],
+    schools: ['satir', 'humanistic'],
+    quoteScenarios: ['用户自我否定时', '用户追求完美时'],
+  },
+};
+
+// 根据用户消息匹配最相关的流派
+function matchSchool(userMessage) {
+  const msg = userMessage.toLowerCase();
+  let bestMatch = null;
+  let maxScore = 0;
+
+  for (const [category, config] of Object.entries(schoolMatchingMap)) {
+    const score = config.keywords.filter(kw => msg.includes(kw)).length;
+    if (score > maxScore) {
+      maxScore = score;
+      bestMatch = category;
+    }
+  }
+
+  if (!bestMatch) return null;
+
+  const match = schoolMatchingMap[bestMatch];
+  // 从匹配到的流派中随机选一个
+  const schoolKey = match.schools[Math.floor(Math.random() * match.schools.length)];
+  const school = psychologySchools[schoolKey];
+
+  return { category: bestMatch, schoolKey, school, quoteScenarios: match.quoteScenarios };
+}
+
+// 从流派数据中提取智能洞察
+function getSchoolInsight(school) {
+  if (!school) return null;
+
+  const insights = [];
+
+  // 提取mindCare应用中的温暖话术
+  if (school.mindCareApplication?.warmPhrase) {
+    insights.push(school.mindCareApplication.warmPhrase);
+  }
+
+  // 提取关键技术（选1个）
+  if (school.keyTechniques?.length) {
+    const tech = school.keyTechniques[Math.floor(Math.random() * school.keyTechniques.length)];
+    if (tech.example) {
+      insights.push(`💡 【${school.name}·${tech.technique}】${tech.example}`);
+    } else if (tech.desc) {
+      insights.push(`💡 【${school.name}·${tech.technique}】${tech.desc}`);
+    }
+  }
+
+  // DBT特殊处理：从四模块中提取
+  if (school.fourModules?.length) {
+    const mod = school.fourModules[Math.floor(Math.random() * school.fourModules.length)];
+    insights.push(`💡 【DBT·${mod.module}】${mod.practicalExercise}`);
+  }
+
+  // ACT六边形模型
+  if (school.hexaflexModel?.length) {
+    const process = school.hexaflexModel[Math.floor(Math.random() * school.hexaflexModel.length)];
+    insights.push(`💡 【ACT·${process.process}】${process.metaphor}`);
+  }
+
+  return insights.length > 0 ? insights[Math.floor(Math.random() * insights.length)] : null;
+}
+
+// 根据场景匹配心理学家名言
+function getRelevantQuote(scenarios) {
+  if (!scenarios || scenarios.length === 0) return null;
+
+  const targetScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+  const allQuotes = [];
+
+  // 遍历所有心理学家，收集匹配场景的名言
+  for (const psychologist of Object.values(psychologistQuotes)) {
+    if (psychologist.quotes) {
+      for (const q of psychologist.quotes) {
+        if (q.scenario && q.scenario.includes(targetScenario)) {
+          allQuotes.push({ ...q, author: psychologist.name });
+        }
+      }
+    }
+  }
+
+  if (allQuotes.length === 0) return null;
+  const selected = allQuotes[Math.floor(Math.random() * allQuotes.length)];
+  return `📖 ${selected.author}：「${selected.text}」\n💬 ${selected.warmReading}`;
+}
+
+// ========== 增强版AI回复系统 ==========
 function getAIResponse(userMessage, mood, messageCount) {
   const msg = userMessage.toLowerCase();
 
@@ -175,12 +371,33 @@ function getAIResponse(userMessage, mood, messageCount) {
     return getCrisisResponse();
   }
 
-  // 检查关键词匹配
+  // 检查关键词匹配（原有逻辑）
+  let baseResponse = null;
   for (const pattern of responsePatterns) {
     if (pattern.keywords.some(kw => msg.includes(kw))) {
       const responses = pattern.responses;
-      return responses[Math.floor(Math.random() * responses.length)];
+      baseResponse = responses[Math.floor(Math.random() * responses.length)];
+      break;
     }
+  }
+
+  // 流派智能增强（约40%概率追加流派洞察，避免每条回复都过长）
+  if (baseResponse) {
+    const schoolMatch = matchSchool(userMessage);
+    if (schoolMatch && Math.random() < 0.4) {
+      const insight = getSchoolInsight(schoolMatch.school);
+      if (insight) {
+        baseResponse += '\n\n' + insight;
+      }
+    }
+    // 约25%概率追加名言（与流派增强独立）
+    if (schoolMatch && Math.random() < 0.25) {
+      const quote = getRelevantQuote(schoolMatch.quoteScenarios);
+      if (quote) {
+        baseResponse += '\n\n' + quote;
+      }
+    }
+    return baseResponse;
   }
 
   // 如果是简短回复，鼓励展开
@@ -194,8 +411,16 @@ function getAIResponse(userMessage, mood, messageCount) {
     return shortReplies[Math.floor(Math.random() * shortReplies.length)];
   }
 
-  // 通用回复
-  return generalResponses[Math.floor(Math.random() * generalResponses.length)];
+  // 通用回复（也尝试流派增强）
+  const generalBase = generalResponses[Math.floor(Math.random() * generalResponses.length)];
+  const schoolMatch = matchSchool(userMessage);
+  if (schoolMatch && Math.random() < 0.3) {
+    const insight = getSchoolInsight(schoolMatch.school);
+    if (insight) {
+      return generalBase + '\n\n' + insight;
+    }
+  }
+  return generalBase;
 }
 
 function formatTime(date) {

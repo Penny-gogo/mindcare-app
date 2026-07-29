@@ -542,7 +542,7 @@ function determineConversationPhase(messageCount, messages, currentPhase) {
   
   // 检测到深度情感表达（进入深入阶段）
   const deepEmotionSignals = ['我一直', '总是', '从来', '每次都', '受不了', '崩溃', '我不知道该怎么办', '我好累', '活不下去'];
-  const userMessages = messages.filter(m => m.sender === 'user');
+  const userMessages = messages.filter(m => m && m.sender === 'user' && m.text);
   const recentUserMsgs = userMessages.slice(-3).map(m => m.text.toLowerCase());
   const hasDeepEmotion = recentUserMsgs.some(msg => deepEmotionSignals.some(s => msg.includes(s)));
   
@@ -610,6 +610,7 @@ const emotionKeywords = {
 
 // 分析单条消息的情感
 function analyzeEmotion(message) {
+  if (!message || typeof message !== 'string') return EMOTION_TYPES.NEUTRAL;
   const msg = message.toLowerCase();
   // 优先检测严重情感（危机）
   for (const kw of emotionKeywords[EMOTION_TYPES.SEVERE]) {
@@ -632,7 +633,8 @@ function analyzeEmotion(message) {
 
 // 追踪情感变化趋势
 function trackEmotionTrend(messages) {
-  const userMsgs = messages.filter(m => m.sender === 'user').slice(-6);
+  if (!Array.isArray(messages)) return { trend: 'stable', current: EMOTION_TYPES.NEUTRAL };
+  const userMsgs = messages.filter(m => m && m.sender === 'user' && m.text).slice(-6);
   if (userMsgs.length < 2) return { trend: 'stable', current: EMOTION_TYPES.NEUTRAL };
   
   const emotionOrder = {
@@ -924,7 +926,8 @@ function getPersonalizedGreeting(memory) {
 // ===== 4. 话题追踪系统 =====
 // 实现多轮对话连贯性，追踪当前话题
 function detectCurrentTopic(messages) {
-  const userMsgs = messages.filter(m => m.sender === 'user').slice(-5);
+  if (!Array.isArray(messages)) return null;
+  const userMsgs = messages.filter(m => m && m.sender === 'user' && m.text).slice(-5);
   if (userMsgs.length === 0) return null;
   
   const recentText = userMsgs.map(m => m.text.toLowerCase()).join(' ');
@@ -954,7 +957,8 @@ function detectCurrentTopic(messages) {
 
 // 检测话题是否发生切换
 function detectTopicSwitch(messages, currentTopic) {
-  const lastUserMsg = messages.filter(m => m.sender === 'user').slice(-1)[0]?.text?.toLowerCase() || '';
+  if (!Array.isArray(messages)) return { switched: false, newTopic: null };
+  const lastUserMsg = messages.filter(m => m && m.sender === 'user' && m.text).slice(-1)[0]?.text?.toLowerCase() || '';
   const newTopic = detectCurrentTopic(messages);
   
   if (!currentTopic || !newTopic) return { switched: false, newTopic };
@@ -992,8 +996,8 @@ function getTopicTransition(oldTopic, newTopic) {
 // 基于豆包式的主动追问，让对话更深入
 function generateFollowUpQuestion(userMessage, conversationHistory, currentTopic) {
   const msg = userMessage.toLowerCase();
-  const userMsgs = conversationHistory.filter(m => m.sender === 'user');
-  const aiMsgs = conversationHistory.filter(m => m.sender === 'ai');
+  const userMsgs = (conversationHistory || []).filter(m => m && m.sender === 'user' && m.text);
+  const aiMsgs = (conversationHistory || []).filter(m => m && m.sender === 'ai' && m.text);
   
   // 如果用户只说了很短的话，鼓励展开
   if (msg.length <= 8 && !msg.includes('?') && !msg.includes('？')) {
@@ -1194,7 +1198,8 @@ function getResponseStrategy(messageCount, phase, emotionState) {
 // ===== 8. 容错与修复机制 =====
 // 检测对话偏离，主动重定向（DeepSeek式的3轮修复策略）
 function detectConversationDrift(messages) {
-  const userMsgs = messages.filter(m => m.sender === 'user');
+  if (!Array.isArray(messages)) return { drifting: false };
+  const userMsgs = messages.filter(m => m && m.sender === 'user' && m.text);
   if (userMsgs.length < 3) return { drifting: false };
   
   // 检测：用户连续3轮回复都很短（<=5字）且无实质内容
@@ -1213,7 +1218,7 @@ function detectConversationDrift(messages) {
   // 检测：用户连续表达"不知道"/"没想法"
   const uncertaintyPatterns = ['不知道', '没想法', '随便', '都行', '不确定', '说不上来'];
   const recent2 = userMsgs.slice(-2);
-  const allUncertain = recent2.every(m => uncertaintyPatterns.some(p => m.text.toLowerCase().includes(p)));
+  const allUncertain = recent2.every(m => m.text && uncertaintyPatterns.some(p => m.text.toLowerCase().includes(p)));
   if (allUncertain) {
     return { drifting: true, type: 'uncertainty' };
   }
@@ -1316,11 +1321,12 @@ function generateContextualResponse(userMessage, conversationHistory) {
   
   // 基于对话历史的上下文回复
   if (conversationHistory && conversationHistory.length >= 2) {
-    const lastAiMsg = conversationHistory.filter(m => m.sender === 'ai').slice(-1)[0];
+    const lastAiMsg = conversationHistory.filter(m => m && m.sender === 'ai' && m.text).slice(-1)[0];
     if (lastAiMsg) {
       // 如果AI上一轮问了问题，用户可能是在回答
-      const aiAskedQuestion = lastAiMsg.text.includes('？') || lastAiMsg.text.includes('?') || 
-        lastAiMsg.text.includes('说说') || lastAiMsg.text.includes('告诉我') || lastAiMsg.text.includes('是什么');
+      const aiText = lastAiMsg.text;
+      const aiAskedQuestion = aiText.includes('？') || aiText.includes('?') || 
+        aiText.includes('说说') || aiText.includes('告诉我') || aiText.includes('是什么');
       
       if (aiAskedQuestion && msg.length > 5) {
         // 用户在回答AI的问题，给予肯定并深入
@@ -1339,18 +1345,40 @@ function generateContextualResponse(userMessage, conversationHistory) {
 }
 
 function getAIResponse(userMessage, mood, messageCount, conversationHistory, conversationState) {
-  const msg = userMessage.toLowerCase();
+  const msg = (userMessage || '').toLowerCase();
   
-  // ===== 获取对话状态（由组件传入） =====
+  // ===== 获取对话状态（由组件传入），每个独立try-catch防止级联崩溃 =====
   const currentPhase = conversationState?.phase || CONVERSATION_PHASES.GREETING;
   const currentTopic = conversationState?.topic || null;
   const userMemory = conversationState?.memory || loadUserMemory();
-  const emotionState = trackEmotionTrend(conversationHistory);
-  const tone = getAdaptiveTone(emotionState);
-  const strategy = getResponseStrategy(messageCount, currentPhase, emotionState);
+  
+  let emotionState, tone, strategy;
+  try {
+    emotionState = trackEmotionTrend(conversationHistory);
+  } catch (e) {
+    console.error('trackEmotionTrend错误:', e);
+    emotionState = { trend: 'stable', current: EMOTION_TYPES.NEUTRAL };
+  }
+  try {
+    tone = getAdaptiveTone(emotionState);
+  } catch (e) {
+    console.error('getAdaptiveTone错误:', e);
+    tone = { warmth: 0.7, directness: 0.6, empathy: 0.7, guidance: 0.6 };
+  }
+  try {
+    strategy = getResponseStrategy(messageCount, currentPhase, emotionState);
+  } catch (e) {
+    console.error('getResponseStrategy错误:', e);
+    strategy = { type: 'balanced', openRatio: 0.5, guideRatio: 0.5 };
+  }
 
   // ===== 优先级0: 容错与修复检测 =====
-  const driftResult = detectConversationDrift(conversationHistory);
+  let driftResult = { drifting: false };
+  try {
+    driftResult = detectConversationDrift(conversationHistory);
+  } catch (e) {
+    console.error('detectConversationDrift错误:', e);
+  }
   if (driftResult.drifting) {
     const repair = generateDriftRepair(driftResult.type, currentTopic);
     if (repair) return repair;
@@ -1374,7 +1402,12 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
   }
 
   // ===== 优先级3: 文章智能匹配 =====
-  const articleMatch = matchArticle(userMessage);
+  let articleMatch = null;
+  try {
+    articleMatch = matchArticle(userMessage);
+  } catch (e) {
+    console.error('matchArticle错误:', e);
+  }
 
   // ===== 优先级4: 关键词匹配（专业心理话题） =====
   let baseResponse = null;
@@ -1389,7 +1422,12 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
   // ===== 如果有baseResponse，进行多层增强 =====
   if (baseResponse) {
     // 分层共情前缀（基于情感状态）
-    const empathy = generateLayeredEmpathy(userMessage, emotionState, currentPhase);
+    let empathy = { shallowEmpathy: null, deepEmpathy: null, actionGuidance: null };
+    try {
+      empathy = generateLayeredEmpathy(userMessage, emotionState, currentPhase);
+    } catch (e) {
+      console.error('generateLayeredEmpathy错误:', e);
+    }
     let finalResponse = '';
     
     // 浅层共情（总是添加）
@@ -1400,75 +1438,132 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
     finalResponse += baseResponse;
     
     // 深层共情（exploring/deepening阶段，高共情需求时）
-    if (empathy.deepEmpathy && tone.empathy >= 0.85 && Math.random() < 0.4) {
+    if (empathy.deepEmpathy && tone.empathy >= 0.85 && Math.random() < 0.5) {
       finalResponse += '\n\n' + empathy.deepEmpathy;
     }
     
-    // 流派智能增强
-    const schoolMatch = matchSchool(userMessage);
-    if (schoolMatch && Math.random() < 0.4) {
-      const insight = getSchoolInsight(schoolMatch.school);
-      if (insight) {
-        finalResponse += '\n\n' + insight;
+    // 流派智能增强（提高概率到60%）
+    let schoolMatch = null;
+    try {
+      schoolMatch = matchSchool(userMessage);
+    } catch (e) {
+      console.error('matchSchool错误:', e);
+    }
+    if (schoolMatch && Math.random() < 0.6) {
+      try {
+        const insight = getSchoolInsight(schoolMatch.school);
+        if (insight) {
+          finalResponse += '\n\n' + insight;
+        }
+      } catch (e) {
+        console.error('getSchoolInsight错误:', e);
       }
     }
-    // 名言增强
-    if (schoolMatch && Math.random() < 0.25) {
-      const quote = getRelevantQuote(schoolMatch.quoteScenarios);
-      if (quote) {
-        finalResponse += '\n\n' + quote;
+    // 名言增强（提高概率到35%）
+    if (schoolMatch && Math.random() < 0.35) {
+      try {
+        const quote = getRelevantQuote(schoolMatch.quoteScenarios);
+        if (quote) {
+          finalResponse += '\n\n' + quote;
+        }
+      } catch (e) {
+        console.error('getRelevantQuote错误:', e);
       }
     }
-    // 文章增强
-    if (articleMatch && Math.random() < 0.3) {
-      const articleEnhancement = getArticleEnhancement(articleMatch);
-      if (articleEnhancement) {
-        finalResponse += '\n\n' + articleEnhancement;
+    // 文章增强（提高概率到50%）
+    if (articleMatch && Math.random() < 0.5) {
+      try {
+        const articleEnhancement = getArticleEnhancement(articleMatch);
+        if (articleEnhancement) {
+          finalResponse += '\n\n' + articleEnhancement;
+        }
+      } catch (e) {
+        console.error('getArticleEnhancement错误:', e);
       }
     }
     
     // 主动追问（基于策略：开放式阶段更可能追问）
     if (strategy.openRatio >= 0.5 && Math.random() < 0.5) {
-      const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
-      finalResponse += '\n\n' + followUp;
+      try {
+        const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
+        finalResponse += '\n\n' + followUp;
+      } catch (e) {
+        console.error('generateFollowUpQuestion错误:', e);
+      }
     }
     
-    // 行动引导（supporting阶段或情绪好转时）
-    if (empathy.actionGuidance && tone.guidance >= 0.6 && Math.random() < 0.4) {
+    // 行动引导（supporting阶段或情绪好转时，提高概率到50%）
+    if (empathy.actionGuidance && tone.guidance >= 0.6 && Math.random() < 0.5) {
       finalResponse += '\n\n' + empathy.actionGuidance;
     }
     
     return finalResponse;
   }
 
-  // ===== 优先级5: 文章suggestedResponse =====
-  if (articleMatch && Math.random() < 0.35) {
-    const articleResponse = getArticleFullResponse(articleMatch);
-    if (articleResponse) {
-      // 追加追问
-      if (strategy.openRatio >= 0.5) {
-        const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
-        return articleResponse + '\n\n' + followUp;
+  // ===== 优先级5: 文章suggestedResponse（提高概率到55%） =====
+  if (articleMatch && Math.random() < 0.55) {
+    try {
+      const articleResponse = getArticleFullResponse(articleMatch);
+      if (articleResponse) {
+        // 追加追问
+        if (strategy.openRatio >= 0.5) {
+          try {
+            const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
+            return articleResponse + '\n\n' + followUp;
+          } catch (e) {
+            return articleResponse;
+          }
+        }
+        return articleResponse;
       }
-      return articleResponse;
+    } catch (e) {
+      console.error('getArticleFullResponse错误:', e);
     }
   }
 
   // ===== 优先级6: 上下文感知回复 =====
-  const contextualResponse = generateContextualResponse(userMessage, conversationHistory);
+  let contextualResponse = null;
+  try {
+    contextualResponse = generateContextualResponse(userMessage, conversationHistory);
+  } catch (e) {
+    console.error('generateContextualResponse错误:', e);
+  }
   if (contextualResponse) {
     let finalResponse = contextualResponse;
     
     // 情感自适应：如果情绪恶化，增加共情前缀
     if (emotionState.trend === 'worsening') {
-      const empathy = generateShallowEmpathy(msg, emotionState.current);
-      finalResponse = empathy + '\n\n' + finalResponse;
+      try {
+        const empathy = generateShallowEmpathy(msg, emotionState.current);
+        finalResponse = empathy + '\n\n' + finalResponse;
+      } catch (e) { /* ignore */ }
+    }
+    
+    // 流派/文章增强（上下文回复也需要知识库支持）
+    let schoolMatch6 = null;
+    try { schoolMatch6 = matchSchool(userMessage); } catch (e) { /* ignore */ }
+    if (articleMatch && Math.random() < 0.4) {
+      try {
+        const articleEnhancement = getArticleEnhancement(articleMatch);
+        if (articleEnhancement) {
+          finalResponse += '\n\n' + articleEnhancement;
+        }
+      } catch (e) { /* ignore */ }
+    } else if (schoolMatch6 && Math.random() < 0.5) {
+      try {
+        const insight = getSchoolInsight(schoolMatch6.school);
+        if (insight) {
+          finalResponse += '\n\n' + insight;
+        }
+      } catch (e) { /* ignore */ }
     }
     
     // 策略性追问
     if (strategy.openRatio >= 0.5 && Math.random() < 0.4) {
-      const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
-      finalResponse += '\n\n' + followUp;
+      try {
+        const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
+        finalResponse += '\n\n' + followUp;
+      } catch (e) { /* ignore */ }
     }
     
     return finalResponse;
@@ -1486,8 +1581,10 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
     
     // 主动追问：基于当前话题
     if (currentTopic) {
-      const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
-      response += '\n\n' + followUp;
+      try {
+        const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
+        response += '\n\n' + followUp;
+      } catch (e) { /* ignore */ }
     }
     
     return response;
@@ -1539,34 +1636,46 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
   }
   
   // 分层共情增强
-  const empathy = generateLayeredEmpathy(userMessage, emotionState, currentPhase);
-  if (empathy.shallowEmpathy && tone.empathy >= 0.7) {
-    generalBase = empathy.shallowEmpathy + '\n\n' + generalBase;
+  let empathy8 = { shallowEmpathy: null, deepEmpathy: null, actionGuidance: null };
+  try {
+    empathy8 = generateLayeredEmpathy(userMessage, emotionState, currentPhase);
+  } catch (e) {
+    console.error('generateLayeredEmpathy错误(优先级8):', e);
+  }
+  if (empathy8.shallowEmpathy && tone.empathy >= 0.7) {
+    generalBase = empathy8.shallowEmpathy + '\n\n' + generalBase;
   }
   
-  // 流派/文章增强
-  const schoolMatch = matchSchool(userMessage);
-  if (articleMatch && Math.random() < 0.3) {
-    const articleEnhancement = getArticleEnhancement(articleMatch);
-    if (articleEnhancement) {
-      generalBase += '\n\n' + articleEnhancement;
-    }
-  } else if (schoolMatch && Math.random() < 0.3) {
-    const insight = getSchoolInsight(schoolMatch.school);
-    if (insight) {
-      generalBase += '\n\n' + insight;
-    }
+  // 流派/文章增强（提高概率，确保给到有用的建议）
+  let schoolMatch8 = null;
+  try { schoolMatch8 = matchSchool(userMessage); } catch (e) { /* ignore */ }
+  if (articleMatch && Math.random() < 0.5) {
+    try {
+      const articleEnhancement = getArticleEnhancement(articleMatch);
+      if (articleEnhancement) {
+        generalBase += '\n\n' + articleEnhancement;
+      }
+    } catch (e) { /* ignore */ }
+  } else if (schoolMatch8 && Math.random() < 0.5) {
+    try {
+      const insight = getSchoolInsight(schoolMatch8.school);
+      if (insight) {
+        generalBase += '\n\n' + insight;
+      }
+    } catch (e) { /* ignore */ }
   }
   
   // 主动追问
-  if (strategy.openRatio >= 0.5 && Math.random() < 0.35) {
-    const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
-    generalBase += '\n\n' + followUp;
+  if (strategy.openRatio >= 0.5 && Math.random() < 0.4) {
+    try {
+      const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
+      generalBase += '\n\n' + followUp;
+    } catch (e) { /* ignore */ }
   }
   
-  // 行动引导
-  if (empathy.actionGuidance && tone.guidance >= 0.6 && Math.random() < 0.3) {
-    generalBase += '\n\n' + empathy.actionGuidance;
+  // 行动引导（提高概率到45%）
+  if (empathy8.actionGuidance && tone.guidance >= 0.6 && Math.random() < 0.45) {
+    generalBase += '\n\n' + empathy8.actionGuidance;
   }
   
   return generalBase;
@@ -1744,12 +1853,18 @@ export default function Chat() {
         };
         setMessages(prev => [...prev, aiMsg]);
       } catch (e) {
-        // 如果AI回复生成出错，给出兜底回复
+        // 如果AI回复生成出错，给出智能兜底回复
         console.error('AI回复生成错误:', e);
+        const fallbackReplies = [
+          '我听到了你说的话。能再多告诉我一些吗？我想更好地理解你的感受。',
+          '谢谢你的分享。你愿意继续说说吗？我在认真听着。',
+          '我理解。你能展开说说吗？这样我能更好地陪伴你。',
+          '你说的这些很重要。能告诉我更多细节吗？'
+        ];
         const fallbackMsg = {
           id: Date.now() + 1,
           sender: 'ai',
-          text: '我听到了，能再多说说吗？我想更好地理解你的感受。',
+          text: fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)],
           time: formatTime(new Date())
         };
         setMessages(prev => [...prev, fallbackMsg]);

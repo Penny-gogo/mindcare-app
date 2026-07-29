@@ -142,6 +142,70 @@
   color: #aaa;
 }
 
+/* Welcome Back */
+.welcome-back-subtitle {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.welcome-back-time {
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.welcome-back-info {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 0;
+}
+
+.welcome-back-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.btn-continue {
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #4a6cf7, #6c5ce7);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(74, 108, 247, 0.3);
+}
+
+.btn-continue:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(74, 108, 247, 0.4);
+}
+
+.btn-fresh {
+  padding: 12px 24px;
+  background: white;
+  color: #666;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-fresh:hover {
+  border-color: #4a6cf7;
+  color: #4a6cf7;
+  background: #f8f9ff;
+}
+
 /* Chat Room */
 .chat-room {
   display: flex;

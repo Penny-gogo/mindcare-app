@@ -711,9 +711,10 @@ function getAdaptiveTone(emotionState) {
   };
 }
 
-// ===== 3. 个性化记忆系统 =====
+// ===== 3. 个性化记忆系统 + 对话历史持久化 =====
 // 记住用户的关键信息，实现豆包式的个性化对话
 const MEMORY_KEY = 'mindcare_user_memory';
+const CHAT_SESSION_KEY = 'mindcare_chat_session';
 
 function loadUserMemory() {
   try {
@@ -741,6 +742,90 @@ function saveUserMemory(memory) {
     memory.lastVisit = new Date().toISOString();
     localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
   } catch { /* ignore */ }
+}
+
+// ===== 对话历史持久化 =====
+function saveChatSession(session) {
+  try {
+    localStorage.setItem(CHAT_SESSION_KEY, JSON.stringify(session));
+  } catch { /* ignore */ }
+}
+
+function loadChatSession() {
+  try {
+    const saved = localStorage.getItem(CHAT_SESSION_KEY);
+    if (!saved) return null;
+    const session = JSON.parse(saved);
+    // 检查会话是否过期（超过7天视为过期）
+    if (session.savedAt) {
+      const savedDate = new Date(session.savedAt);
+      const now = new Date();
+      const daysDiff = (now - savedDate) / (1000 * 60 * 60 * 24);
+      if (daysDiff > 7) {
+        localStorage.removeItem(CHAT_SESSION_KEY);
+        return null;
+      }
+    }
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+function clearChatSession() {
+  try {
+    localStorage.removeItem(CHAT_SESSION_KEY);
+  } catch { /* ignore */ }
+}
+
+// 生成欢迎回来的AI消息
+function generateWelcomeBackMessage(memory, lastTopic) {
+  const greetings = [];
+  
+  // 基础欢迎
+  greetings.push('欢迎回来！🤗');
+  
+  // 如果有用户名字
+  if (memory.name) {
+    greetings.push(`${memory.name}，欢迎回来！🤗`);
+  }
+  
+  // 基于上次困扰的关心
+  if (memory.concerns && memory.concerns.length > 0) {
+    const recentConcern = memory.concerns[memory.concerns.length - 1];
+    const concernTypeMap = {
+      emotion: '情绪方面',
+      relationship: '人际关系方面',
+      work: '工作方面'
+    };
+    greetings.push(`上次你提到${concernTypeMap[recentConcern.type] || ''}的困扰，现在感觉怎么样了？`);
+  }
+  
+  // 基于话题的追问
+  if (lastTopic) {
+    const topicNames = {
+      work_stress: '工作压力',
+      emotion: '情绪',
+      sleep: '睡眠',
+      relationship: '感情',
+      family: '家庭',
+      self_worth: '自我价值感',
+      meaning: '人生方向',
+      habit: '习惯改变'
+    };
+    greetings.push(`上次我们聊到了${topicNames[lastTopic] || '一些事情'}，有什么想继续聊聊的吗？`);
+  }
+  
+  // 通用选项
+  const followUps = [
+    '心情有变化吗？',
+    '有什么想再聊聊的吗？',
+    '最近有什么新的感受吗？',
+    '想继续上次的话题，还是聊点新的？'
+  ];
+  greetings.push(followUps[Math.floor(Math.random() * followUps.length)]);
+  
+  return greetings.join(' ');
 }
 
 // 从用户消息中提取关键信息更新记忆
@@ -1494,22 +1579,47 @@ function formatTime(date) {
 export default function Chat() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [mood, setMood] = useState(null);
-  const [messages, setMessages] = useState([]);
+  
+  // ===== 检测是否有保存的对话 =====
+  const savedSession = loadChatSession();
+  const hasSavedSession = !!(savedSession && savedSession.messages && savedSession.messages.length > 0);
+  
+  const [mood, setMood] = useState(hasSavedSession ? savedSession.mood : null);
+  const [messages, setMessages] = useState(hasSavedSession ? savedSession.messages : []);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [showTopics, setShowTopics] = useState(true);
+  const [showTopics, setShowTopics] = useState(!hasSavedSession);
   const [tipCount, setTipCount] = useState(0);
   const messagesEndRef = useRef(null);
   
   // ===== 深度对话系统状态 =====
-  const [conversationPhase, setConversationPhase] = useState(CONVERSATION_PHASES.GREETING);
-  const [currentTopic, setCurrentTopic] = useState(null);
+  const [conversationPhase, setConversationPhase] = useState(
+    hasSavedSession ? (savedSession.conversationPhase || CONVERSATION_PHASES.EXPLORING) : CONVERSATION_PHASES.GREETING
+  );
+  const [currentTopic, setCurrentTopic] = useState(
+    hasSavedSession ? (savedSession.currentTopic || null) : null
+  );
   const [userMemory, setUserMemory] = useState(() => loadUserMemory());
+  
+  // ===== 回访状态 =====
+  const [showWelcomeBack, setShowWelcomeBack] = useState(hasSavedSession);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  // ===== 自动保存对话历史 =====
+  useEffect(() => {
+    if (messages.length > 0 && mood) {
+      saveChatSession({
+        messages,
+        mood,
+        conversationPhase,
+        currentTopic,
+        savedAt: new Date().toISOString()
+      });
+    }
+  }, [messages, mood, conversationPhase, currentTopic]);
 
   // 组件加载时更新访问次数
   useEffect(() => {
@@ -1519,6 +1629,36 @@ export default function Chat() {
       saveUserMemory(updatedMemory);
     }
   }, []);
+
+  // ===== 回访处理：继续对话 =====
+  const handleContinueChat = () => {
+    setShowWelcomeBack(false);
+    // 添加欢迎回来的AI消息
+    const welcomeMsg = generateWelcomeBackMessage(userMemory, currentTopic);
+    const aiMsg = {
+      id: Date.now(),
+      sender: 'ai',
+      text: welcomeMsg,
+      time: formatTime(new Date())
+    };
+    setMessages(prev => [...prev, aiMsg]);
+    // 滚动到底部
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  // ===== 回访处理：重新开始 =====
+  const handleStartFresh = () => {
+    clearChatSession();
+    setShowWelcomeBack(false);
+    setMood(null);
+    setMessages([]);
+    setShowTopics(true);
+    setTipCount(0);
+    setConversationPhase(CONVERSATION_PHASES.GREETING);
+    setCurrentTopic(null);
+  };
 
   const handleMoodSelect = (selectedMood) => {
     setMood(selectedMood);
@@ -1630,6 +1770,7 @@ export default function Chat() {
   };
 
   const handleReset = () => {
+    clearChatSession();
     setMood(null);
     setMessages([]);
     setShowTopics(true);
@@ -1646,6 +1787,37 @@ export default function Chat() {
         <h2>请先登录</h2>
         <p>登录后即可和{AI_NAME}聊天</p>
         <button onClick={() => navigate('/login')} className="btn-primary">去登录</button>
+      </div>
+    );
+  }
+
+  // 欢迎回来界面（有保存的对话时显示）
+  if (showWelcomeBack && hasSavedSession) {
+    const lastTime = savedSession.savedAt ? new Date(savedSession.savedAt) : null;
+    const timeStr = lastTime 
+      ? `上次聊天：${lastTime.toLocaleDateString('zh-CN')} ${lastTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+      : '';
+    const msgCount = savedSession.messages ? savedSession.messages.filter(m => m.sender === 'user').length : 0;
+    
+    return (
+      <div className="chat-mood-page">
+        <div className="mood-card">
+          <div className="mood-ai-avatar">{AI_AVATAR}</div>
+          <h1>欢迎回来</h1>
+          <p className="welcome-back-subtitle">我还在这里等你 🤗</p>
+          {timeStr && <p className="welcome-back-time">{timeStr}</p>}
+          {msgCount > 0 && <p className="welcome-back-info">上次我们聊了{msgCount}轮，有{savedSession.mood ? `${savedSession.mood.emoji} ${savedSession.mood.label}` : ''}的心情</p>}
+          <div className="mood-divider"></div>
+          <div className="welcome-back-actions">
+            <button className="btn-continue" onClick={handleContinueChat}>
+              💬 继续上次对话
+            </button>
+            <button className="btn-fresh" onClick={handleStartFresh}>
+              🔄 选择新的心情
+            </button>
+          </div>
+          <p className="mood-privacy">🔒 你的对话内容完全保密，仅保存在本地</p>
+        </div>
       </div>
     );
   }

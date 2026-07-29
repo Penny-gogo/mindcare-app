@@ -34,8 +34,8 @@ export default function Home() {
               </>
             ) : (
               <>
-                <Link to="/register" className="btn-primary">开始使用</Link>
-                <Link to="/login" className="btn-secondary">已有账号</Link>
+                <Link to="/chat" className="btn-primary">和小暖聊聊</Link>
+                <Link to="/assessment" className="btn-secondary">测一测心理状态</Link>
               </>
             )}
           </div>
@@ -242,7 +242,7 @@ export default function Home() {
         {user ? (
           <Link to="/chat" className="btn-primary btn-lg">和小暖聊聊</Link>
         ) : (
-          <Link to="/register" className="btn-primary btn-lg">开始吧，免费的</Link>
+          <Link to="/chat" className="btn-primary btn-lg">试试和小暖聊聊</Link>
         )}
       </section>
     </div>

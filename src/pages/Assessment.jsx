@@ -14,17 +14,6 @@ export default function Assessment() {
   const [keywordInput, setKeywordInput] = useState('');
   const [result, setResult] = useState(null);
 
-  if (!user) {
-    return (
-      <div className="assessment-login-prompt">
-        <span className="prompt-icon">🧩</span>
-        <h2>请先登录</h2>
-        <p>登录后即可进行趣味测评</p>
-        <button onClick={() => navigate('/login')} className="btn-primary">去登录</button>
-      </div>
-    );
-  }
-
   // 选择测评
   const handleSelectAssessment = (assessment) => {
     setSelectedAssessment(assessment);

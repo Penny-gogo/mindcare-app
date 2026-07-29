@@ -1780,17 +1780,6 @@ export default function Chat() {
     setCurrentTopic(null);
   };
 
-  if (!user) {
-    return (
-      <div className="chat-login-prompt">
-        <span className="prompt-icon">🤗</span>
-        <h2>请先登录</h2>
-        <p>登录后即可和{AI_NAME}聊天</p>
-        <button onClick={() => navigate('/login')} className="btn-primary">去登录</button>
-      </div>
-    );
-  }
-
   // 欢迎回来界面（有保存的对话时显示）
   if (showWelcomeBack && hasSavedSession) {
     const lastTime = savedSession.savedAt ? new Date(savedSession.savedAt) : null;

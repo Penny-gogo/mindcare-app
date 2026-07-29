@@ -20,13 +20,12 @@ export default function Navbar() {
         <Link to="/" className="navbar-brand">
           <span className="brand-icon">💚</span>
           <span className="brand-text">MindCare</span>
-          <span className="brand-sub">EAP</span>
         </Link>
 
         <div className="navbar-links">
           <Link to="/" className={isActive('/')}>首页</Link>
-          {user && <Link to="/chat" className={isActive('/chat')}>小暖</Link>}
-          {user && <Link to="/assessment" className={isActive('/assessment')}>测评</Link>}
+          <Link to="/chat" className={isActive('/chat')}>小暖</Link>
+          <Link to="/assessment" className={isActive('/assessment')}>测评</Link>
         </div>
 
         <div className="navbar-auth">

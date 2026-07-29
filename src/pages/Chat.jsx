@@ -177,6 +177,68 @@ const responsePatterns = [
   }
 ];
 
+// ===== 基础对话模式（打招呼/自我介绍/功能询问等） =====
+const basicPatterns = [
+  {
+    keywords: ['你好', '嗨', 'hi', 'hello', '早上好', '下午好', '晚上好', '早安', '晚安', '在吗', '你在吗'],
+    responses: [
+      `你好呀！😊 我是${AI_NAME}，你的AI心灵伙伴。很高兴见到你！\n\n今天想聊点什么呢？无论是工作压力、情绪困扰，还是只是想找人说说心里话，我都在这里陪你。`,
+      `嗨！欢迎来和我聊天 🤗 我是${AI_NAME}，专门陪伴和倾听你的AI伙伴。\n\n你可以随时和我说说你的感受，或者点击下方的快捷话题开始聊天。`,
+      `你好！我在呢 💚 有什么想聊的吗？不用有压力，按照你的节奏来就好。`
+    ]
+  },
+  {
+    keywords: ['你是谁', '自我介绍', '介绍一下你', '你是什么', '你是AI吗', '你是机器人', '你叫什么', '小暖是谁'],
+    responses: [
+      `我是${AI_NAME}，你的AI心灵伙伴 🤗\n\n我的设计灵感来自EAP员工帮助计划和高校心理互助体系。我能做的包括：\n\n💙 **倾听与陪伴** — 随时听你倾诉，不带评判\n🧠 **专业支持** — 融合CBT、正念、萨提亚等8大心理学流派的智慧\n💡 **实用技巧** — 提供4-7-8呼吸法、5-4-3-2-1接地法等即学即用的方法\n📚 **知识分享** — 连接9所高校心理资源和16篇专业文章\n🆘 **危机识别** — 检测到危机信号时立即提供专业热线\n\n我不是替代专业咨询，而是在你需要的时候，第一时间给你温暖和支持。`,
+      `你好！我是${AI_NAME} 🤗 一个为你设计的AI心灵伙伴。\n\n我融合了认知行为疗法(CBT)、正念减压(MBSR)、接纳承诺疗法(ACT)、萨提亚模式、叙事治疗等8大心理学流派的智慧，还连接了北师大、华东师大等9所高校的心理资源。\n\n简单来说：当你感到压力、焦虑、迷茫，或者只是想找人聊聊的时候，我都在这里。有什么想说的吗？`
+    ]
+  },
+  {
+    keywords: ['你能做什么', '你能帮我什么', '你有什么功能', '你能干什么', '怎么用', '使用方法', '帮我什么', '有什么用', '你会什么'],
+    responses: [
+      `我能为你做这些 💚\n\n🗣️ **倾诉陪伴** — 随时听你说心里话，不带评判\n🧠 **情绪疏导** — 用CBT、正念、ACT等专业方法帮你理解和调节情绪\n💡 **实用技巧** — 4-7-8呼吸法、5-4-3-2-1接地法、STOP技术等即学即用\n📋 **自我评估** — 引导你使用专业的心理健康自评工具\n📚 **知识推荐** — 根据你的情况推荐相关的心理科普文章和高校资源\n🆘 **危机支持** — 检测到严重信号时立即提供24小时心理热线\n\n你可以直接告诉我你的感受，比如"我最近压力很大"或"我睡不着"，我就会给出针对性的回应。`,
+      `很高兴你问！我的核心能力是 💚\n\n1️⃣ **智能对话** — 根据你说的话，匹配最适合的心理学流派和方法\n2️⃣ **情绪急救** — 焦虑时教你呼吸法，低落时陪你做接地练习\n3️⃣ **深度探索** — 帮你看见自己的模式，比如"总是反复"可能和潜意识有关\n4️⃣ **资源连接** — 推荐相关的心理文章和9所高校的免费心理资源\n5️⃣ **危机守护** — 如果你提到伤害自己的想法，我会立即提供专业热线\n\n试试告诉我你现在的心情或困扰，我来展示一下 😊`
+    ]
+  },
+  {
+    keywords: ['谢谢', '感谢', '多谢', '太好了', '有帮助', '谢谢小暖', '谢谢你'],
+    responses: [
+      `不客气 💚 能帮到你我就很开心了。\n\n记住，任何时候你需要倾诉，我都在这里。照顾好自己！`,
+      `谢谢你的信任 🤗 你的勇气——愿意表达和寻求支持——本身就是一种力量。\n\n如果之后还需要聊聊，随时来找我。`,
+      `很高兴能陪伴你 💚 对自己温柔一点，你已经做得很好了。`
+    ]
+  },
+  {
+    keywords: ['没用', '没帮助', '帮不了', '算了', '不想聊了', '不说了', '再见', '拜拜', '结束'],
+    responses: [
+      `我理解你可能感到失望或者不想继续了，这完全没关系。\n\n如果你之后想再聊聊，我随时都在。无论什么时候，这里都是安全的 💚`,
+      `好的，我尊重你的感受。有时候确实需要自己的空间。\n\n只想让你知道：如果你改变主意，我随时在这里等你。照顾好自己 🤗`,
+      `没关系的。每个人处理情绪的方式不同，不想聊也是一种选择。\n\n如果将来需要，MindCare的树洞也是可以匿名倾诉的地方。保重 💚`
+    ]
+  },
+  {
+    keywords: ['测试', '试试', '试一下', '测试一下', '看看'],
+    responses: [
+      `好的，欢迎测试！😊 你可以试试这些：\n\n- 说"我最近压力很大"→ 我会用CBT和正念方法回应\n- 说"我总是拖延"→ 我会从情绪调节角度分析\n- 说"我和同事有矛盾"→ 我会用NVC非暴力沟通帮你\n- 说"介绍一下你自己"→ 了解我的能力\n\n随便聊，我准备好了 🤗`
+    ]
+  },
+  {
+    keywords: ['怎么办', '该怎么做', '如何是好', '有什么办法', '求建议', '给点建议', '支招', '出主意'],
+    responses: [
+      `我愿意和你一起想办法 💚\n\n不过先让我了解一下：你现在面临的具体情况是什么？能说说发生了什么吗？\n\n这样我才能给出真正适合你的建议，而不是泛泛而谈。`,
+      `遇到困难想找办法，这本身就很积极。能具体说说是什么事情吗？\n\n不同的挑战有不同的应对方式——工作上的、关系上的、情绪上的，方法都不一样。告诉我更多，我们一起看看。`
+    ]
+  },
+  {
+    keywords: ['无聊', '好无聊', '没事做', '闲', '打发时间'],
+    responses: [
+      `无聊的时候，其实也是一个和自己相处的机会 😊\n\n你可以试试：\n🧘 做3分钟正念呼吸，观察自己的内心状态\n📝 写一段情绪日记，记录今天的感受\n📚 浏览一下MindCare知识库，说不定有感兴趣的文章\n\n或者，和我聊聊最近有什么想法？有时候无聊背后藏着一些没被注意到的需求。`,
+      `有时候无聊是身体在说"我需要一点新鲜感"。你平时喜欢做什么让自己开心的事情呢？\n\n也可以试试我们的知识库页面，里面有9所高校的心理资源和16篇心理科普文章，说不定能发现有趣的内容。`
+    ]
+  }
+];
+
 // 通用关怀回复（融入温暖话术模板）
 const generalResponses = [
   '谢谢你的分享。能告诉我更多吗？我想更好地理解你的感受。',
@@ -457,18 +519,118 @@ function getArticleFullResponse(articleMatch) {
 }
 
 // ========== 增强版AI回复系统 ==========
-function getAIResponse(userMessage, mood, messageCount) {
+
+// 从用户消息中提取关键信息，用于生成更贴切的回复
+function extractUserFocus(msg) {
+  const focusPatterns = [
+    { pattern: /我(.{0,4})(很|特别|非常|太|好)?(累|疲惫|疲倦|精疲力竭)/, focus: '疲惫' },
+    { pattern: /我(.{0,4})(很|特别|非常|太)?(烦|烦躁|烦闷|心烦)/, focus: '烦躁' },
+    { pattern: /我(.{0,4})(很|特别|非常|太)?(怕|害怕|恐惧|担心)/, focus: '恐惧' },
+    { pattern: /我(.{0,4})(想|想要|需要)(.+)/, focus: '需求' },
+    { pattern: /我(.{0,4})(不|没)(知道|明白|懂)/, focus: '困惑' },
+    { pattern: /我(.{0,4})(觉得|感觉|感到)(.+)/, focus: '感受' },
+    { pattern: /(.+)(让我|使我|让我)(.+)/, focus: '影响' },
+    { pattern: /不知道(.+)/, focus: '困惑' },
+    { pattern: /怎么办(.+)/, focus: '求助' },
+  ];
+  
+  for (const { pattern, focus } of focusPatterns) {
+    const match = msg.match(pattern);
+    if (match) return { focus, detail: match[0] };
+  }
+  return null;
+}
+
+// 生成上下文感知的通用回复
+function generateContextualResponse(userMessage, conversationHistory) {
+  const msg = userMessage.toLowerCase();
+  const userFocus = extractUserFocus(msg);
+  
+  // 如果能提取到用户关注点，生成针对性回复
+  if (userFocus) {
+    const contextualReplies = {
+      '疲惫': [
+        `你提到${userFocus.detail}，这种疲惫感一定让你很难受。是身体上的累，还是心累？有时候两种疲惫需要的休息方式不一样。\n\n💡 试试「微休息」：给自己5分钟，什么都不做，只是呼吸。`,
+        `我听到了，${userFocus.detail}。疲惫是身体在发出信号——它需要被照顾了。\n\n你最近是不是一直在超负荷运转？让我们看看怎么帮你减减负。`
+      ],
+      '烦躁': [
+        `你${userFocus.detail}，这种烦躁的感觉我理解。烦躁往往是因为有些事情没有按照你期望的方式进行。\n\n能说说具体是什么让你烦吗？有时候把烦躁的对象说出来，本身就能缓解一些。`,
+        `${userFocus.detail}——先深呼吸一次。烦躁的时候，我们容易做出后悔的决定。\n\n💡 STOP技术：S停下来→T深呼吸→O观察情绪→P选择回应。先让自己稳住，再看看怎么处理。`
+      ],
+      '恐惧': [
+        `你${userFocus.detail}，害怕的感觉很不好受。但你能说出来，说明你在面对它，这很勇敢。\n\n你愿意说说具体在怕什么吗？有时候把恐惧说出来，它就没那么可怕了。`,
+        `我理解${userFocus.detail}的感受。恐惧是大脑在保护你，但有时候它的「警报」会过于敏感。\n\n你能分辨出，你害怕的事情是已经发生的，还是你担心可能发生的吗？`
+      ],
+      '需求': [
+        `你${userFocus.detail}——能清楚知道自己需要什么，这很重要。\n\n让我们一起看看，有什么方法可以帮你接近这个需求？`,
+        `我听到了你的需要。${userFocus.detail}。有时候把需求说出来，就已经是迈向满足的第一步了。\n\n现在阻碍你得到这些的是什么？`
+      ],
+      '困惑': [
+        `${userFocus.detail}——这种困惑感很常见，说明你在认真思考。\n\n不用急着找答案。能说说具体是什么事情让你困惑吗？有时候理清问题本身，答案就会浮现。`,
+        `困惑说明你在思考，这比麻木地接受要好。${userFocus.detail}。\n\n试试把困惑写下来——当问题从脑子里落到纸上，往往就没那么乱了。`
+      ],
+      '感受': [
+        `你${userFocus.detail}。谢谢你说出你的感受，这需要勇气。\n\n这种感受是什么时候开始的？是某件事触发的，还是慢慢积累的？`,
+        `我听到了，${userFocus.detail}。你的感受是真实的，不需要否定它。\n\n你觉得这种感受在告诉你什么？有时候情绪背后藏着重要的信息。`
+      ],
+      '影响': [
+        `${userFocus.detail}——这件事对你的影响看来很大。能多说说具体情况吗？\n\n了解完整的情况，我才能更好地陪伴你。`,
+        `我理解，${userFocus.detail}。被外界影响情绪是很正常的反应。\n\n你觉得在这件事中，最让你难受的是什么？`
+      ],
+      '求助': [
+        `你在寻求帮助，这本身就是一种力量。能具体说说遇到了什么困难吗？\n\n不同的挑战有不同的应对方式，告诉我更多，我们一起想办法。`
+      ]
+    };
+    
+    const replies = contextualReplies[userFocus.focus];
+    if (replies) {
+      return replies[Math.floor(Math.random() * replies.length)];
+    }
+  }
+  
+  // 基于对话历史的上下文回复
+  if (conversationHistory && conversationHistory.length >= 2) {
+    const lastAiMsg = conversationHistory.filter(m => m.sender === 'ai').slice(-1)[0];
+    if (lastAiMsg) {
+      // 如果AI上一轮问了问题，用户可能是在回答
+      const aiAskedQuestion = lastAiMsg.text.includes('？') || lastAiMsg.text.includes('?') || 
+        lastAiMsg.text.includes('说说') || lastAiMsg.text.includes('告诉我') || lastAiMsg.text.includes('是什么');
+      
+      if (aiAskedQuestion && msg.length > 5) {
+        // 用户在回答AI的问题，给予肯定并深入
+        const followUpReplies = [
+          `谢谢你的分享，我理解了。你说的这些，让你最大的感受是什么？\n\n了解你的感受，能帮我更好地陪伴你。`,
+          `我听到了。这种情况确实不容易。你觉得现在最需要的是什么？是有人倾听，还是想找找解决办法？`,
+          `谢谢你告诉我这些。你能够这样表达，说明你对自己有很好的觉察。\n\n让我们一起看看，有什么方法可以帮你感觉好一些？`,
+          `我理解了你的情况。这确实是一个挑战。你之前有尝试过什么方式来应对吗？`
+        ];
+        return followUpReplies[Math.floor(Math.random() * followUpReplies.length)];
+      }
+    }
+  }
+  
+  return null;
+}
+
+function getAIResponse(userMessage, mood, messageCount, conversationHistory) {
   const msg = userMessage.toLowerCase();
 
-  // 优先检测危机关键词
+  // 优先级1: 危机关键词检测
   if (detectCrisis(msg)) {
     return getCrisisResponse();
   }
 
-  // 文章智能匹配（优先级较高，当匹配到相关文章时有概率使用文章的suggestedResponse）
+  // 优先级2: 基础对话模式（打招呼/自我介绍/功能询问等）
+  for (const pattern of basicPatterns) {
+    if (pattern.keywords.some(kw => msg.includes(kw))) {
+      return pattern.responses[Math.floor(Math.random() * pattern.responses.length)];
+    }
+  }
+
+  // 优先级3: 文章智能匹配
   const articleMatch = matchArticle(userMessage);
 
-  // 检查关键词匹配（原有逻辑）
+  // 优先级4: 关键词匹配（专业心理话题）
   let baseResponse = null;
   for (const pattern of responsePatterns) {
     if (pattern.keywords.some(kw => msg.includes(kw))) {
@@ -505,7 +667,7 @@ function getAIResponse(userMessage, mood, messageCount) {
     return baseResponse;
   }
 
-  // 如果没有baseResponse但有强文章匹配，约35%概率使用文章的suggestedResponse作为完整回复
+  // 优先级5: 如果没有baseResponse但有强文章匹配，约35%概率使用文章的suggestedResponse
   if (articleMatch && Math.random() < 0.35) {
     const articleResponse = getArticleFullResponse(articleMatch);
     if (articleResponse) {
@@ -513,7 +675,13 @@ function getAIResponse(userMessage, mood, messageCount) {
     }
   }
 
-  // 如果是简短回复，鼓励展开
+  // 优先级6: 上下文感知回复（提取用户关注点+对话历史）
+  const contextualResponse = generateContextualResponse(userMessage, conversationHistory);
+  if (contextualResponse) {
+    return contextualResponse;
+  }
+
+  // 优先级7: 简短回复鼓励展开
   if (msg.length <= 5) {
     const shortReplies = [
       '嗯，我在听。能多说一些吗？',
@@ -524,8 +692,18 @@ function getAIResponse(userMessage, mood, messageCount) {
     return shortReplies[Math.floor(Math.random() * shortReplies.length)];
   }
 
-  // 通用回复（也尝试流派+文章增强）
-  const generalBase = generalResponses[Math.floor(Math.random() * generalResponses.length)];
+  // 优先级8: 通用回复（回显用户内容+流派/文章增强）
+  // 从用户消息中提取关键词用于回显
+  const userWords = msg.replace(/[，。！？、；：""''（）\[\]{}.,!?;:'"()\s]/g, '').slice(0, 20);
+  const echoReplies = [
+    `你提到了「${userWords.slice(0, 8)}……」，我听到了。能再详细说说吗？我想更好地理解你的感受。`,
+    `谢谢你愿意和我说这些。你说的这些，最让你困扰的是哪一点？`,
+    `我理解你的感受。这种情况确实不容易面对。你之前有尝试过什么方式来应对吗？`,
+    `你的感受值得被认真对待。让我们一起看看，怎么让你感觉好一些？`,
+    `我听到了你说的话。你愿意继续展开说说吗？我在这里认真听着。`,
+    `谢谢你信任我，和我分享这些。你觉得现在最困扰你的是什么？`
+  ];
+  const generalBase = echoReplies[Math.floor(Math.random() * echoReplies.length)];
   const schoolMatch = matchSchool(userMessage);
   
   // 优先尝试文章增强
@@ -605,7 +783,7 @@ export default function Chat() {
     // 模拟AI回复
     const delay = 800 + Math.random() * 1500;
     setTimeout(() => {
-      const aiText = getAIResponse(text, mood, messages.length);
+      const aiText = getAIResponse(text, mood, messages.length, messages);
       const aiMsg = {
         id: Date.now() + 1,
         sender: 'ai',

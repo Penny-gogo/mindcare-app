@@ -31,7 +31,7 @@ export default function Home() {
             {user ? (
               <>
                 <Link to="/chat" className="btn-primary">和小暖聊聊</Link>
-                <Link to="/treehole" className="btn-secondary">进入树洞</Link>
+                <Link to="/assessment" className="btn-secondary">心理测评</Link>
               </>
             ) : (
               <>
@@ -79,27 +79,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Three Modules */}
+      {/* Two Core Modules */}
       <section className="modules-section">
         <div className="section-header">
-          <h2>三大核心模块</h2>
+          <h2>两大核心模块</h2>
           <p>基于EAP行业标准，全方位守护你的心理健康</p>
         </div>
         <div className="modules-grid">
-          <Link to="/treehole" className="module-card">
-            <div className="module-icon" style={{ background: 'linear-gradient(135deg, #4a6cf7, #6c5ce7)' }}>
-              🌳
-            </div>
-            <h3>匿名树洞</h3>
-            <p>借鉴北师大"雪绒花"朋辈互助模式，匿名倾诉、安全释放。你的心事只有树洞知道，主管和HRBP可以关注团队情绪趋势，但永远不知道是谁说的。</p>
-            <div className="module-features">
-              <span className="feature-tag">匿名发帖</span>
-              <span className="feature-tag">朋辈支持</span>
-              <span className="feature-tag">情绪洞察</span>
-            </div>
-            <span className="module-arrow">→</span>
-          </Link>
-
           <Link to="/chat" className="module-card">
             <div className="module-icon" style={{ background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)' }}>
               🤗
@@ -158,7 +144,7 @@ export default function Home() {
           <div className="pro-card">
             <div className="pro-icon">🛡️</div>
             <h3>三级支持体系</h3>
-            <p>朋辈倾听（树洞）→ 专业咨询（AI+咨询师）→ 医疗转介（危机热线）</p>
+            <p>AI专业疏导 → 科学测评 → 医疗转介（危机热线）</p>
             <span className="pro-tag">分层响应机制</span>
           </div>
         </div>
@@ -181,7 +167,7 @@ export default function Home() {
             <div className="step-number">2</div>
             <div className="step-icon">💬</div>
             <h3>选择方式</h3>
-            <p>树洞匿名倾诉、AI专业疏导、或科学测评，随你选择</p>
+            <p>AI专业疏导、科学测评，随你选择</p>
           </div>
           <div className="step-card">
             <div className="step-number">3</div>
@@ -203,7 +189,7 @@ export default function Home() {
           <div className="privacy-items">
             <div className="privacy-item">
               <span className="privacy-check">✓</span>
-              <span>树洞发言完全匿名，无法追溯至个人</span>
+              <span>AI对话记录仅保存在你的设备，完全私密</span>
             </div>
             <div className="privacy-item">
               <span className="privacy-check">✓</span>

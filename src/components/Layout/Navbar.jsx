@@ -25,11 +25,8 @@ export default function Navbar() {
 
         <div className="navbar-links">
           <Link to="/" className={isActive('/')}>首页</Link>
-          {user && <Link to="/treehole" className={isActive('/treehole')}>树洞</Link>}
           {user && <Link to="/chat" className={isActive('/chat')}>小暖</Link>}
           {user && <Link to="/assessment" className={isActive('/assessment')}>测评</Link>}
-          {user && <Link to="/knowledge" className={isActive('/knowledge')}>知识库</Link>}
-          {user && <Link to="/counselors" className={isActive('/counselors')}>咨询师</Link>}
         </div>
 
         <div className="navbar-auth">

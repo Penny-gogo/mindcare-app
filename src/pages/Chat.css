@@ -292,6 +292,164 @@
   color: #4a6cf7;
 }
 
+.ch-name-edit {
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.ch-name-edit:hover {
+  background: #f0f3ff;
+}
+
+/* 命名弹窗 */
+.name-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.name-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 28px 24px;
+  width: 320px;
+  max-width: 90vw;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease;
+}
+
+.name-modal h3 {
+  font-size: 18px;
+  color: #1a1a2e;
+  margin: 0 0 6px 0;
+  text-align: center;
+}
+
+.name-modal p {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 18px 0;
+  text-align: center;
+}
+
+.name-modal-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e0e0e8;
+  border-radius: 10px;
+  font-size: 16px;
+  color: #1a1a2e;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.name-modal-input:focus {
+  border-color: #4a6cf7;
+}
+
+.name-modal-input::placeholder {
+  color: #bbb;
+  font-size: 14px;
+}
+
+.name-modal-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  justify-content: center;
+}
+
+.name-modal-reset {
+  padding: 8px 14px;
+  border: 1.5px solid #e0e0e8;
+  border-radius: 8px;
+  background: white;
+  color: #888;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.name-modal-reset:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.name-modal-cancel {
+  padding: 8px 18px;
+  border: 1.5px solid #e0e0e8;
+  border-radius: 8px;
+  background: white;
+  color: #666;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.name-modal-cancel:hover {
+  border-color: #4a6cf7;
+  color: #4a6cf7;
+}
+
+.name-modal-confirm {
+  padding: 8px 24px;
+  border: none;
+  border-radius: 8px;
+  background: #4a6cf7;
+  color: white;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.name-modal-confirm:hover {
+  background: #3b5de7;
+}
+
+.name-modal-confirm:disabled {
+  background: #c0c0e0;
+  cursor: not-allowed;
+}
+
+/* 心情页改名提示 */
+.mood-rename-hint {
+  font-size: 12px;
+  color: #4a6cf7;
+  cursor: pointer;
+  margin: 0 0 4px 0 !important;
+  transition: color 0.2s;
+}
+
+.mood-rename-hint:hover {
+  color: #3b5de7;
+  text-decoration: underline;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 /* Messages */
 .chat-messages {
   flex: 1;

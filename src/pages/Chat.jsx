@@ -8,8 +8,9 @@ import articleCollectionData from '../data/knowledge/articleCollection';
 const articleCollection = articleCollectionData;
 import './Chat.css';
 
-const AI_NAME = '小暖';
+const DEFAULT_AI_NAME = '小暖';
 const AI_AVATAR = '🤗';
+const AI_NAME_KEY = 'mindcare_ai_name';
 
 const moodOptions = [
   { emoji: '😊', label: '开心', level: 'good' },
@@ -101,7 +102,7 @@ const responsePatterns = [
     responses: [
       '感到孤独是很痛苦的体验。但请记住，寻求帮助本身就是一种力量，你现在和我聊天，就是在照顾自己。\n\n壹心理的研究发现，75%的咨询者在首次咨询后就有明显改善——有时候，只是被倾听就能带来巨大的改变。',
       '有时候身边虽然有人，但还是觉得没人真正理解自己。这种感觉我懂。你愿意和我说说，什么样的事情让你觉得不被理解吗？\n\n💡 试试「情绪日记」：每天花5分钟写下今天的情绪和触发事件。这不仅能帮你理清思绪，也能让你在寻求帮助时更清楚地表达自己。',
-      '你不是一个人在面对这些。EAP就是为了让员工知道，有人在乎你的感受，有人愿意倾听。\n\n有时候我们不需要专家，只需要一个愿意倾听的人——小暖就是这样的存在。'
+      '你不是一个人在面对这些。EAP就是为了让员工知道，有人在乎你的感受，有人愿意倾听。\n\n有时候我们不需要专家，只需要一个愿意倾听的人——你的AI伙伴就是这样的存在。'
     ]
   },
   {
@@ -182,16 +183,16 @@ const basicPatterns = [
   {
     keywords: ['你好', '嗨', 'hi', 'hello', '早上好', '下午好', '晚上好', '早安', '晚安', '在吗', '你在吗'],
     responses: [
-      `你好呀！😊 我是${AI_NAME}，你的AI心灵伙伴。很高兴见到你！\n\n今天想聊点什么呢？无论是工作压力、情绪困扰，还是只是想找人说说心里话，我都在这里陪你。`,
-      `嗨！欢迎来和我聊天 🤗 我是${AI_NAME}，专门陪伴和倾听你的AI伙伴。\n\n你可以随时和我说说你的感受，或者点击下方的快捷话题开始聊天。`,
+      `你好呀！😊 我是${aiName || DEFAULT_AI_NAME}，你的AI心灵伙伴。很高兴见到你！\n\n今天想聊点什么呢？无论是工作压力、情绪困扰，还是只是想找人说说心里话，我都在这里陪你。`,
+      `嗨！欢迎来和我聊天 🤗 我是${aiName || DEFAULT_AI_NAME}，专门陪伴和倾听你的AI伙伴。\n\n你可以随时和我说说你的感受，或者点击下方的快捷话题开始聊天。`,
       `你好！我在呢 💚 有什么想聊的吗？不用有压力，按照你的节奏来就好。`
     ]
   },
   {
-    keywords: ['你是谁', '自我介绍', '介绍一下你', '你是什么', '你是AI吗', '你是机器人', '你叫什么', '小暖是谁'],
+    keywords: ['你是谁', '自我介绍', '介绍一下你', '你是什么', '你是AI吗', '你是机器人', '你叫什么'],
     responses: [
-      `我是${AI_NAME}，你的AI心灵伙伴 🤗\n\n我的设计灵感来自EAP员工帮助计划和高校心理互助体系。我能做的包括：\n\n💙 **倾听与陪伴** — 随时听你倾诉，不带评判\n🧠 **专业支持** — 融合CBT、正念、萨提亚等8大心理学流派的智慧\n💡 **实用技巧** — 提供4-7-8呼吸法、5-4-3-2-1接地法等即学即用的方法\n📚 **知识分享** — 连接9所高校心理资源和16篇专业文章\n🆘 **危机识别** — 检测到危机信号时立即提供专业热线\n\n我不是替代专业咨询，而是在你需要的时候，第一时间给你温暖和支持。`,
-      `你好！我是${AI_NAME} 🤗 一个为你设计的AI心灵伙伴。\n\n我融合了认知行为疗法(CBT)、正念减压(MBSR)、接纳承诺疗法(ACT)、萨提亚模式、叙事治疗等8大心理学流派的智慧，还连接了北师大、华东师大等9所高校的心理资源。\n\n简单来说：当你感到压力、焦虑、迷茫，或者只是想找人聊聊的时候，我都在这里。有什么想说的吗？`
+      '我是你的AI心灵伙伴 🤗\n\n我的设计灵感来自EAP员工帮助计划和高校心理互助体系。我能做的包括：\n\n💙 **倾听与陪伴** — 随时听你倾诉，不带评判\n🧠 **专业支持** — 融合CBT、正念、萨提亚等8大心理学流派的智慧\n💡 **实用技巧** — 提供4-7-8呼吸法、5-4-3-2-1接地法等即学即用的方法\n📚 **知识分享** — 连接9所高校心理资源和16篇专业文章\n🆘 **危机识别** — 检测到危机信号时立即提供专业热线\n\n我不是替代专业咨询，而是在你需要的时候，第一时间给你温暖和支持。',
+      '你好！我是你的AI心灵伙伴 🤗\n\n我融合了认知行为疗法(CBT)、正念减压(MBSR)、接纳承诺疗法(ACT)、萨提亚模式、叙事治疗等8大心理学流派的智慧，还连接了北师大、华东师大等9所高校的心理资源。\n\n简单来说：当你感到压力、焦虑、迷茫，或者只是想找人聊聊的时候，我都在这里。有什么想说的吗？'
     ]
   },
   {
@@ -202,7 +203,7 @@ const basicPatterns = [
     ]
   },
   {
-    keywords: ['谢谢', '感谢', '多谢', '太好了', '有帮助', '谢谢小暖', '谢谢你'],
+    keywords: ['谢谢', '感谢', '多谢', '太好了', '有帮助', '谢谢你'],
     responses: [
       `不客气 💚 能帮到你我就很开心了。\n\n记住，任何时候你需要倾诉，我都在这里。照顾好自己！`,
       `谢谢你的信任 🤗 你的勇气——愿意表达和寻求支持——本身就是一种力量。\n\n如果之后还需要聊聊，随时来找我。`,
@@ -717,6 +718,20 @@ function getAdaptiveTone(emotionState) {
 // 记住用户的关键信息，实现豆包式的个性化对话
 const MEMORY_KEY = 'mindcare_user_memory';
 const CHAT_SESSION_KEY = 'mindcare_chat_session';
+
+function loadAIName() {
+  try {
+    return localStorage.getItem(AI_NAME_KEY) || DEFAULT_AI_NAME;
+  } catch {
+    return DEFAULT_AI_NAME;
+  }
+}
+
+function saveAIName(name) {
+  try {
+    localStorage.setItem(AI_NAME_KEY, name);
+  } catch { /* ignore */ }
+}
 
 function loadUserMemory() {
   try {
@@ -1713,6 +1728,28 @@ export default function Chat() {
   // ===== 回访状态 =====
   const [showWelcomeBack, setShowWelcomeBack] = useState(hasSavedSession);
 
+  // ===== 助手命名功能 =====
+  const [aiName, setAiName] = useState(() => loadAIName());
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+
+  const handleNameSubmit = () => {
+    const trimmed = nameInput.trim();
+    if (trimmed && trimmed.length <= 8) {
+      setAiName(trimmed);
+      saveAIName(trimmed);
+      setShowNameModal(false);
+      setNameInput('');
+    }
+  };
+
+  const handleNameReset = () => {
+    setAiName(DEFAULT_AI_NAME);
+    saveAIName(DEFAULT_AI_NAME);
+    setShowNameModal(false);
+    setNameInput('');
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
@@ -1785,7 +1822,7 @@ export default function Chat() {
       {
         id: 1,
         sender: 'ai',
-        text: `${greetingPrefix}你好呀，我是${AI_NAME}，你的AI心灵伙伴 🤗\n\n我看到你今天的心情是 ${selectedMood.emoji} ${selectedMood.label}。\n\n${aiReply}`,
+        text: `${greetingPrefix}你好呀，我是${aiName}，你的AI心灵伙伴 🤗\n\n我看到你今天的心情是 ${selectedMood.emoji} ${selectedMood.label}。\n\n${aiReply}`,
         time: formatTime(new Date())
       }
     ]);
@@ -1945,7 +1982,8 @@ export default function Chat() {
       <div className="chat-mood-page">
         <div className="mood-card">
           <div className="mood-ai-avatar">{AI_AVATAR}</div>
-          <h1>嗨，我是{AI_NAME}</h1>
+          <h1>嗨，我是{aiName}</h1>
+          <p className="mood-rename-hint" onClick={() => { setNameInput(aiName === DEFAULT_AI_NAME ? '' : aiName); setShowNameModal(true); }}>✏️ 给我取个名字</p>
           <p>你的AI心灵伙伴，随时倾听你的心声</p>
           <div className="mood-divider"></div>
           <h3>今天感觉怎么样？</h3>
@@ -1975,7 +2013,7 @@ export default function Chat() {
         <div className="chat-header-left">
           <span className="ch-ai-avatar">{AI_AVATAR}</span>
           <div>
-            <h3>{AI_NAME}</h3>
+            <h3>{aiName}</h3>
             <span className="ch-status">
               <span className="status-dot"></span>
               在线 · 随时倾听
@@ -1984,6 +2022,9 @@ export default function Chat() {
         </div>
         <div className="chat-header-right">
           <span className="ch-mood-badge">{mood.emoji} {mood.label}</span>
+          <button className="ch-name-edit" onClick={() => { setNameInput(aiName === DEFAULT_AI_NAME ? '' : aiName); setShowNameModal(true); }} title="给助手取名">
+            ✏️
+          </button>
           <button className="ch-reset" onClick={handleReset}>
             重新开始
           </button>
@@ -2045,6 +2086,38 @@ export default function Chat() {
           发送
         </button>
       </div>
+
+      {/* 命名弹窗 */}
+      {showNameModal && (
+        <div className="name-modal-overlay" onClick={() => setShowNameModal(false)}>
+          <div className="name-modal" onClick={e => e.stopPropagation()}>
+            <h3>给你的AI伙伴取个名字</h3>
+            <p>一个专属的名字，让陪伴更温暖</p>
+            <input
+              className="name-modal-input"
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleNameSubmit(); }}
+              placeholder="输入名字（最多8个字）"
+              maxLength={8}
+              autoFocus
+            />
+            <div className="name-modal-btns">
+              {aiName !== DEFAULT_AI_NAME && (
+                <button className="name-modal-reset" onClick={handleNameReset}>
+                  恢复默认
+                </button>
+              )}
+              <button className="name-modal-cancel" onClick={() => setShowNameModal(false)}>
+                取消
+              </button>
+              <button className="name-modal-confirm" onClick={handleNameSubmit} disabled={!nameInput.trim()}>
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

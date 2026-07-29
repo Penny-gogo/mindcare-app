@@ -518,6 +518,647 @@ function getArticleFullResponse(articleMatch) {
   return article.aiIntegration.suggestedResponse;
 }
 
+// ========== 深度对话系统（参考豆包/DeepSeek模式） ==========
+
+// ===== 1. 对话状态机 =====
+// 跟踪对话阶段，实现豆包式的"渐进式深入"对话策略
+const CONVERSATION_PHASES = {
+  GREETING: 'greeting',     // 初始问候阶段
+  EXPLORING: 'exploring',   // 探索了解阶段
+  DEEPENING: 'deepening',   // 深入理解阶段
+  SUPPORTING: 'supporting', // 支持引导阶段
+  CLOSING: 'closing'        // 收尾总结阶段
+};
+
+// 根据对话轮数和内容判断当前阶段
+function determineConversationPhase(messageCount, messages, currentPhase) {
+  // 前2轮为问候阶段
+  if (messageCount <= 2) return CONVERSATION_PHASES.GREETING;
+  
+  // 检测到告别意图
+  const lastUserMsg = messages.filter(m => m.sender === 'user').slice(-1)[0]?.text?.toLowerCase() || '';
+  const closingSignals = ['再见', '拜拜', '谢谢', '够了', '好了', '没事了', '不想聊了', '结束'];
+  if (closingSignals.some(s => lastUserMsg.includes(s))) return CONVERSATION_PHASES.CLOSING;
+  
+  // 检测到深度情感表达（进入深入阶段）
+  const deepEmotionSignals = ['我一直', '总是', '从来', '每次都', '受不了', '崩溃', '我不知道该怎么办', '我好累', '活不下去'];
+  const userMessages = messages.filter(m => m.sender === 'user');
+  const recentUserMsgs = userMessages.slice(-3).map(m => m.text.toLowerCase());
+  const hasDeepEmotion = recentUserMsgs.some(msg => deepEmotionSignals.some(s => msg.includes(s)));
+  
+  // 检测到用户在寻求具体方法（进入支持阶段）
+  const supportSignals = ['怎么办', '怎么做', '有什么方法', '给我建议', '帮我', '教我'];
+  const hasSupportNeed = recentUserMsgs.some(msg => supportSignals.some(s => msg.includes(s)));
+  
+  if (hasDeepEmotion && messageCount >= 6) return CONVERSATION_PHASES.DEEPENING;
+  if (hasSupportNeed && messageCount >= 4) return CONVERSATION_PHASES.SUPPORTING;
+  if (messageCount >= 4) return CONVERSATION_PHASES.EXPLORING;
+  
+  return currentPhase || CONVERSATION_PHASES.EXPLORING;
+}
+
+// 根据对话阶段生成阶段感知的引导语
+function getPhaseGuidance(phase, userMessage) {
+  const guidanceMap = {
+    [CONVERSATION_PHASES.GREETING]: {
+      prefix: '',
+      suffix: '',
+      style: 'warm_welcome'  // 温暖欢迎
+    },
+    [CONVERSATION_PHASES.EXPLORING]: {
+      prefix: '',
+      suffix: '\n\n你能多说说吗？我想更了解你的感受。',
+      style: 'open_exploring'  // 开放式探索
+    },
+    [CONVERSATION_PHASES.DEEPENING]: {
+      prefix: '',
+      suffix: '',
+      style: 'deep_empathy'  // 深度共情
+    },
+    [CONVERSATION_PHASES.SUPPORTING]: {
+      prefix: '',
+      suffix: '',
+      style: 'structured_guide'  // 结构化引导
+    },
+    [CONVERSATION_PHASES.CLOSING]: {
+      prefix: '',
+      suffix: '',
+      style: 'warm_closing'  // 温暖收尾
+    }
+  };
+  return guidanceMap[phase] || guidanceMap[CONVERSATION_PHASES.EXPLORING];
+}
+
+// ===== 2. 情感追踪系统 =====
+// 追踪用户情绪变化曲线，实现DeepSeek式的情感自适应
+const EMOTION_TYPES = {
+  POSITIVE: 'positive',     // 积极：开心、平静
+  NEUTRAL: 'neutral',       // 中性：无聊、困惑
+  MILD_NEGATIVE: 'mild_neg', // 轻度消极：疲惫、烦躁
+  NEGATIVE: 'negative',     // 消极：焦虑、低落
+  SEVERE: 'severe'          // 严重：崩溃、绝望
+};
+
+// 情感关键词映射
+const emotionKeywords = {
+  [EMOTION_TYPES.POSITIVE]: ['开心', '高兴', '快乐', '幸福', '满足', '放松', '不错', '还好', '好多了', '好些了', '感谢', '谢谢', '有帮助'],
+  [EMOTION_TYPES.NEUTRAL]: ['无聊', '困惑', '不知道', '迷茫', '想想', '考虑', '也许', '可能', '看看'],
+  [EMOTION_TYPES.MILD_NEGATIVE]: ['累', '疲惫', '烦', '烦躁', '心烦', '压力', '忙', '没时间', '加班'],
+  [EMOTION_TYPES.NEGATIVE]: ['焦虑', '不安', '担心', '紧张', '低落', '难过', '沮丧', '孤独', '失眠', '想哭', '无助'],
+  [EMOTION_TYPES.SEVERE]: ['崩溃', '绝望', '受不了', '活不下去', '不想活', '自杀', '自残', '伤害自己', '结束生命']
+};
+
+// 分析单条消息的情感
+function analyzeEmotion(message) {
+  const msg = message.toLowerCase();
+  // 优先检测严重情感（危机）
+  for (const kw of emotionKeywords[EMOTION_TYPES.SEVERE]) {
+    if (msg.includes(kw)) return EMOTION_TYPES.SEVERE;
+  }
+  for (const kw of emotionKeywords[EMOTION_TYPES.NEGATIVE]) {
+    if (msg.includes(kw)) return EMOTION_TYPES.NEGATIVE;
+  }
+  for (const kw of emotionKeywords[EMOTION_TYPES.MILD_NEGATIVE]) {
+    if (msg.includes(kw)) return EMOTION_TYPES.MILD_NEGATIVE;
+  }
+  for (const kw of emotionKeywords[EMOTION_TYPES.POSITIVE]) {
+    if (msg.includes(kw)) return EMOTION_TYPES.POSITIVE;
+  }
+  for (const kw of emotionKeywords[EMOTION_TYPES.NEUTRAL]) {
+    if (msg.includes(kw)) return EMOTION_TYPES.NEUTRAL;
+  }
+  return EMOTION_TYPES.NEUTRAL;
+}
+
+// 追踪情感变化趋势
+function trackEmotionTrend(messages) {
+  const userMsgs = messages.filter(m => m.sender === 'user').slice(-6);
+  if (userMsgs.length < 2) return { trend: 'stable', current: EMOTION_TYPES.NEUTRAL };
+  
+  const emotionOrder = {
+    [EMOTION_TYPES.POSITIVE]: 1,
+    [EMOTION_TYPES.NEUTRAL]: 2,
+    [EMOTION_TYPES.MILD_NEGATIVE]: 3,
+    [EMOTION_TYPES.NEGATIVE]: 4,
+    [EMOTION_TYPES.SEVERE]: 5
+  };
+  
+  const emotions = userMsgs.map(m => analyzeEmotion(m.text));
+  const current = emotions[emotions.length - 1];
+  const prev = emotions[emotions.length - 2];
+  
+  const diff = emotionOrder[current] - emotionOrder[prev];
+  if (diff >= 1) return { trend: 'worsening', current, prev };   // 情绪恶化
+  if (diff <= -1) return { trend: 'improving', current, prev };  // 情绪好转
+  return { trend: 'stable', current, prev };                      // 情绪稳定
+}
+
+// 根据情感状态调整语调（豆包式的情感自适应）
+function getAdaptiveTone(emotionState) {
+  const { trend, current } = emotionState;
+  
+  if (current === EMOTION_TYPES.SEVERE) {
+    return {
+      warmth: 1.0,       // 最高温暖度
+      directness: 0.9,   // 直接给出危机资源
+      empathy: 1.0,      // 最高共情
+      guidance: 0.8      // 强引导
+    };
+  }
+  
+  if (trend === 'worsening') {
+    return {
+      warmth: 0.9,
+      directness: 0.4,   // 不急于给建议，先倾听
+      empathy: 0.9,
+      guidance: 0.3      // 减少引导，多倾听
+    };
+  }
+  
+  if (trend === 'improving') {
+    return {
+      warmth: 0.8,
+      directness: 0.7,   // 可以更直接地给建议
+      empathy: 0.7,
+      guidance: 0.7      // 增加正向引导
+    };
+  }
+  
+  if (current === EMOTION_TYPES.NEGATIVE) {
+    return {
+      warmth: 0.85,
+      directness: 0.5,
+      empathy: 0.85,
+      guidance: 0.5
+    };
+  }
+  
+  if (current === EMOTION_TYPES.MILD_NEGATIVE) {
+    return {
+      warmth: 0.7,
+      directness: 0.6,
+      empathy: 0.7,
+      guidance: 0.6
+    };
+  }
+  
+  // 积极/中性状态
+  return {
+    warmth: 0.6,
+    directness: 0.6,
+    empathy: 0.5,
+    guidance: 0.6
+  };
+}
+
+// ===== 3. 个性化记忆系统 =====
+// 记住用户的关键信息，实现豆包式的个性化对话
+const MEMORY_KEY = 'mindcare_user_memory';
+
+function loadUserMemory() {
+  try {
+    const saved = localStorage.getItem(MEMORY_KEY);
+    return saved ? JSON.parse(saved) : {
+      name: null,
+      concerns: [],      // 主要困扰
+      preferences: [],   // 偏好/兴趣
+      copingMethods: [], // 已尝试的应对方式
+      positiveEvents: [],// 积极事件
+      visitCount: 0,     // 访问次数
+      lastVisit: null,   // 上次访问
+      keyInsights: []    // 对话中的关键洞察
+    };
+  } catch {
+    return {
+      name: null, concerns: [], preferences: [], copingMethods: [],
+      positiveEvents: [], visitCount: 0, lastVisit: null, keyInsights: []
+    };
+  }
+}
+
+function saveUserMemory(memory) {
+  try {
+    memory.lastVisit = new Date().toISOString();
+    localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
+  } catch { /* ignore */ }
+}
+
+// 从用户消息中提取关键信息更新记忆
+function extractMemoryFromMessage(message, currentMemory) {
+  const msg = message.toLowerCase();
+  const updated = { ...currentMemory };
+  
+  // 提取姓名
+  const namePatterns = [
+    /我叫(.{2,4})[，。！？\s]/,
+    /我是(.{2,4})[，。！？\s]/,
+    /我名字是(.{2,4})[，。！？\s]/,
+    /名字叫(.{2,4})[，。！？\s]/
+  ];
+  for (const p of namePatterns) {
+    const m = msg.match(p);
+    if (m && m[1].length >= 2 && m[1].length <= 4) {
+      updated.name = m[1];
+      break;
+    }
+  }
+  
+  // 提取困扰
+  const concernPatterns = [
+    { pattern: /我(最近|一直|总是|经常)?(.{0,4})(焦虑|压力|失眠|低落|烦躁|迷茫|倦怠|孤独)/, type: 'emotion' },
+    { pattern: /(.{0,6})(和|跟)(同事|领导|老板|伴侣|老公|老婆|家人|父母)(.{0,6})(矛盾|冲突|吵架|问题)/, type: 'relationship' },
+    { pattern: /(.{0,4})(工作|职场|加班|996)(.{0,6})(压力|累|烦|受不了)/, type: 'work' },
+  ];
+  for (const { pattern, type } of concernPatterns) {
+    const m = msg.match(pattern);
+    if (m) {
+      const concernText = m[0].slice(0, 20);
+      if (!updated.concerns.some(c => c.text === concernText)) {
+        updated.concerns = [...updated.concerns.slice(-4), { text: concernText, type, time: Date.now() }];
+      }
+    }
+  }
+  
+  // 提取已尝试的应对方式
+  const copingPatterns = [
+    /我(试过|尝试过|做过|用过)(.{2,15})/,
+    /我(已经在|正在)(.{2,15})/,
+  ];
+  for (const p of copingPatterns) {
+    const m = msg.match(p);
+    if (m) {
+      const method = m[0].slice(0, 20);
+      if (!updated.copingMethods.includes(method)) {
+        updated.copingMethods = [...updated.copingMethods.slice(-4), method];
+      }
+    }
+  }
+  
+  return updated;
+}
+
+// 基于记忆生成个性化开场或回应
+function getPersonalizedGreeting(memory) {
+  if (!memory.name && memory.visitCount === 0) return null;
+  
+  const greetings = [];
+  
+  if (memory.name) {
+    greetings.push(`${memory.name}，又见面了！`);
+  }
+  
+  if (memory.visitCount > 0 && memory.lastVisit) {
+    const lastDate = new Date(memory.lastVisit);
+    const now = new Date();
+    const daysDiff = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
+    if (daysDiff === 0) {
+      greetings.push('今天又来找我聊聊，我很开心 🤗');
+    } else if (daysDiff === 1) {
+      greetings.push('隔了一天又见面了！');
+    } else if (daysDiff <= 7) {
+      greetings.push(`有${daysDiff}天没聊了，最近怎么样？`);
+    } else {
+      greetings.push('好久不见！你还好吗？');
+    }
+  }
+  
+  // 如果之前有困扰，主动关心
+  if (memory.concerns.length > 0) {
+    const recentConcern = memory.concerns[memory.concerns.length - 1];
+    const concernTypeMap = {
+      emotion: '情绪方面',
+      relationship: '人际关系方面',
+      work: '工作方面'
+    };
+    greetings.push(`上次你提到${concernTypeMap[recentConcern.type] || ''}的困扰，现在感觉怎么样了？`);
+  }
+  
+  return greetings.length > 0 ? greetings.join('') : null;
+}
+
+// ===== 4. 话题追踪系统 =====
+// 实现多轮对话连贯性，追踪当前话题
+function detectCurrentTopic(messages) {
+  const userMsgs = messages.filter(m => m.sender === 'user').slice(-5);
+  if (userMsgs.length === 0) return null;
+  
+  const recentText = userMsgs.map(m => m.text.toLowerCase()).join(' ');
+  
+  const topicPatterns = [
+    { topic: 'work_stress', keywords: ['工作', '加班', '压力', '忙', '任务', 'deadline', '996', '领导', '同事'] },
+    { topic: 'emotion', keywords: ['焦虑', '低落', '难过', '不开心', '烦躁', '崩溃', '想哭', '沮丧'] },
+    { topic: 'sleep', keywords: ['失眠', '睡不着', '早醒', '多梦', '睡眠', '噩梦'] },
+    { topic: 'relationship', keywords: ['伴侣', '老公', '老婆', '恋爱', '分手', '感情', '亲密关系'] },
+    { topic: 'family', keywords: ['家人', '父母', '家庭', '原生家庭', '妈妈', '爸爸', '婆媳'] },
+    { topic: 'self_worth', keywords: ['不够好', '自卑', '没价值', '完美主义', '不配', '讨厌自己'] },
+    { topic: 'meaning', keywords: ['意义', '迷茫', '方向', '活着为什么', '人生', '存在'] },
+    { topic: 'habit', keywords: ['拖延', '习惯', '改变', '坚持', '自律'] },
+  ];
+  
+  let bestTopic = null;
+  let maxScore = 0;
+  for (const { topic, keywords } of topicPatterns) {
+    const score = keywords.filter(kw => recentText.includes(kw)).length;
+    if (score > maxScore) {
+      maxScore = score;
+      bestTopic = topic;
+    }
+  }
+  return maxScore >= 2 ? bestTopic : null;
+}
+
+// 检测话题是否发生切换
+function detectTopicSwitch(messages, currentTopic) {
+  const lastUserMsg = messages.filter(m => m.sender === 'user').slice(-1)[0]?.text?.toLowerCase() || '';
+  const newTopic = detectCurrentTopic(messages);
+  
+  if (!currentTopic || !newTopic) return { switched: false, newTopic };
+  if (currentTopic === newTopic) return { switched: false, newTopic };
+  
+  // 检测是否是明确的话题切换信号
+  const switchSignals = ['对了', '另外', '说说', '换个话题', '我想问', '其实', '还有'];
+  const hasSwitchSignal = switchSignals.some(s => lastUserMsg.includes(s));
+  
+  return { switched: hasSwitchSignal || true, newTopic, oldTopic: currentTopic };
+}
+
+// 生成话题切换的过渡话术
+function getTopicTransition(oldTopic, newTopic) {
+  const topicNames = {
+    work_stress: '工作方面',
+    emotion: '情绪方面',
+    sleep: '睡眠问题',
+    relationship: '感情方面',
+    family: '家庭方面',
+    self_worth: '自我价值感',
+    meaning: '人生方向',
+    habit: '习惯改变'
+  };
+  
+  const transitions = [
+    `好的，我们聊聊${topicNames[newTopic] || '这个'}。`,
+    `嗯，${topicNames[newTopic] || '这个话题'}也很重要。`,
+    `我理解，${topicNames[newTopic] || '这方面'}的困扰确实需要关注。`,
+  ];
+  return transitions[Math.floor(Math.random() * transitions.length)];
+}
+
+// ===== 5. 主动追问策略 =====
+// 基于豆包式的主动追问，让对话更深入
+function generateFollowUpQuestion(userMessage, conversationHistory, currentTopic) {
+  const msg = userMessage.toLowerCase();
+  const userMsgs = conversationHistory.filter(m => m.sender === 'user');
+  const aiMsgs = conversationHistory.filter(m => m.sender === 'ai');
+  
+  // 如果用户只说了很短的话，鼓励展开
+  if (msg.length <= 8 && !msg.includes('?') && !msg.includes('？')) {
+    const expandQuestions = [
+      '能多说说吗？我想更好地理解你。',
+      '嗯，你能展开说说吗？',
+      '我在听，可以告诉我更多细节吗？',
+      '谢谢你愿意分享。能说说具体是什么情况吗？'
+    ];
+    return expandQuestions[Math.floor(Math.random() * expandQuestions.length)];
+  }
+  
+  // 基于话题的深度追问
+  const topicQuestions = {
+    work_stress: [
+      '你觉得工作中最让你有压力的是什么？是工作量、人际关系，还是对未来的不确定？',
+      '这种压力持续多久了？是一直都有，还是最近才开始的？',
+      '你有没有尝试过和领导或同事沟通你的感受？'
+    ],
+    emotion: [
+      '这种情绪是什么时候开始的？是某件事触发的，还是慢慢积累的？',
+      '你觉得这种情绪在什么情况下会加重？什么时候会好一些？',
+      '你身边有可以倾诉的人吗？'
+    ],
+    sleep: [
+      '失眠的时候，脑子里都在想什么？',
+      '你试过什么方法帮助睡眠吗？效果怎么样？',
+      '白天的状态受到多大影响？'
+    ],
+    relationship: [
+      '在这段关系中，你最渴望被理解的是什么？',
+      '你觉得沟通中最大的障碍是什么？',
+      '如果理想状态是10分，现在几分？'
+    ],
+    family: [
+      '你觉得家庭中哪种互动模式最让你困扰？',
+      '你有没有尝试过表达自己的感受？结果怎么样？',
+      '你觉得家人了解你的真实感受吗？'
+    ],
+    self_worth: [
+      '你觉得「不够好」这个想法，是从什么时候开始的？',
+      '如果有一个朋友和你有同样的感受，你会怎么对TA说？',
+      '有没有什么时候，你觉得自己其实做得还不错？'
+    ],
+    meaning: [
+      '如果不再被这些困扰影响，你最想做什么？',
+      '在你的人生中，有没有什么时刻是觉得特别有意义的？',
+      '你觉得什么对你来说是最重要的？'
+    ],
+    habit: [
+      '你觉得是什么在阻碍你改变？',
+      '之前有尝试过改变吗？最接近成功的一次是什么情况？',
+      '如果明天就能开始改变，你最想先改变什么？'
+    ]
+  };
+  
+  if (currentTopic && topicQuestions[currentTopic]) {
+    const questions = topicQuestions[currentTopic];
+    // 避免重复问同一个问题（检查AI最近的回复中是否已包含类似问题）
+    const recentAiText = aiMsgs.slice(-3).map(m => m.text).join(' ');
+    const unusedQuestions = questions.filter(q => !recentAiText.includes(q.slice(0, 10)));
+    if (unusedQuestions.length > 0) {
+      return unusedQuestions[Math.floor(Math.random() * unusedQuestions.length)];
+    }
+  }
+  
+  // 通用深度追问
+  const generalDeepQuestions = [
+    '你觉得这件事对你最大的影响是什么？',
+    '你最希望现在的状况有什么改变？',
+    '如果有一个你最信任的人在这里，你最想对TA说什么？',
+    '在你经历这些的时候，内心最需要的是什么？'
+  ];
+  
+  return generalDeepQuestions[Math.floor(Math.random() * generalDeepQuestions.length)];
+}
+
+// ===== 6. 分层共情表达系统 =====
+// 实现豆包式的多层次共情：浅层认同→深层理解→行动引导
+function generateLayeredEmpathy(userMessage, emotionState, phase) {
+  const { current, trend } = emotionState;
+  const msg = userMessage.toLowerCase();
+  
+  // 浅层共情：确认感受（所有情况都先给）
+  const shallowEmpathy = generateShallowEmpathy(msg, current);
+  
+  // 深层共情：理解背后的需求（在exploring/deepening阶段）
+  const deepEmpathy = (phase === CONVERSATION_PHASES.EXPLORING || phase === CONVERSATION_PHASES.DEEPENING)
+    ? generateDeepEmpathy(msg, current) : null;
+  
+  // 行动引导：提供具体方向（在supporting阶段或情绪好转时）
+  const actionGuidance = (phase === CONVERSATION_PHASES.SUPPORTING || trend === 'improving')
+    ? generateActionGuidance(msg, current) : null;
+  
+  return { shallowEmpathy, deepEmpathy, actionGuidance };
+}
+
+function generateShallowEmpathy(msg, emotion) {
+  const empathyMap = {
+    [EMOTION_TYPES.POSITIVE]: [
+      '很高兴你现在的状态不错！',
+      '看到你心情有好转，我也很开心。',
+      '你的积极状态值得珍惜。'
+    ],
+    [EMOTION_TYPES.NEUTRAL]: [
+      '嗯，我听到了。',
+      '谢谢你说出来。',
+      '我理解。'
+    ],
+    [EMOTION_TYPES.MILD_NEGATIVE]: [
+      '这种感受我理解，确实不容易。',
+      '我听到了，你现在一定有些辛苦。',
+      '这种感觉是真实的，不需要否定。'
+    ],
+    [EMOTION_TYPES.NEGATIVE]: [
+      '你的感受是重要的，我在这里陪着你。',
+      '这种痛苦我理解，你不需要一个人承受。',
+      '我听到了你的痛苦，你的感受值得被认真对待。'
+    ],
+    [EMOTION_TYPES.SEVERE]: [
+      '我听到你了，你现在承受的痛苦是真实的。',
+      '你的生命是重要的，你不是一个人。'
+    ]
+  };
+  const options = empathyMap[emotion] || empathyMap[EMOTION_TYPES.NEUTRAL];
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+function generateDeepEmpathy(msg, emotion) {
+  const deepEmpathyMap = {
+    [EMOTION_TYPES.MILD_NEGATIVE]: [
+      '有时候疲惫不只是身体上的，也是心在说「我需要被看见」。你觉得自己最需要被看见的是什么？',
+      '烦躁的背后，往往是有一些需要没有被满足。你觉得是什么需要？',
+      '压力之下，我们常常忽略了自己的感受。如果可以对自己说一句话，你想说什么？'
+    ],
+    [EMOTION_TYPES.NEGATIVE]: [
+      '焦虑常常是因为我们在乎，只是「警报」太响了。你最在乎的是什么？',
+      '低落的时候，内心最渴望的是什么？有时候答案就藏在这个渴望里。',
+      '孤独的感觉很痛，但你在和我说话，说明你内心有一部分在寻找连接。那部分在说什么？'
+    ],
+    [EMOTION_TYPES.SEVERE]: [
+      '你现在的痛苦说明你在承受着很大的东西。你不需要独自面对。',
+    ]
+  };
+  const options = deepEmpathyMap[emotion];
+  if (!options) return null;
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+function generateActionGuidance(msg, emotion) {
+  const guidanceMap = {
+    [EMOTION_TYPES.MILD_NEGATIVE]: [
+      '💡 试试给自己5分钟的「微休息」——什么都不做，只是呼吸。有时候，允许自己停下来就是最好的开始。',
+      '💡 可以试试写下现在最让你烦的3件事，然后看看哪些是你能控制的，哪些不能。把精力放在能控制的部分。'
+    ],
+    [EMOTION_TYPES.NEGATIVE]: [
+      '💡 4-7-8呼吸法可以帮助缓解焦虑：吸气4秒→屏住7秒→缓缓呼出8秒。试试做3次，看看身体的感觉有没有变化。',
+      '💡 5-4-3-2-1接地练习：说出5个看到的、4个摸到的、3个听到的、2个闻到的、1个尝到的。这能帮你从情绪中回到当下。'
+    ],
+    [EMOTION_TYPES.POSITIVE]: [
+      '💡 积极心理学研究发现，记录每天3件好事能显著提升幸福感。你可以试试今天记录3件让你开心的事。',
+    ]
+  };
+  const options = guidanceMap[emotion];
+  if (!options) return null;
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+// ===== 7. 动态策略调整 =====
+// 前几轮开放式收集信息，后续结构化引导（DeepSeek式策略切换）
+function getResponseStrategy(messageCount, phase, emotionState) {
+  const { current, trend } = emotionState;
+  
+  // 危机情况：立即结构化引导
+  if (current === EMOTION_TYPES.SEVERE) {
+    return { type: 'crisis', openRatio: 0, guideRatio: 1.0 };
+  }
+  
+  // 前3轮：开放式为主（70%开放+30%引导）
+  if (messageCount <= 3) {
+    return { type: 'open_exploring', openRatio: 0.7, guideRatio: 0.3 };
+  }
+  
+  // 4-6轮：平衡（50%开放+50%引导）
+  if (messageCount <= 6) {
+    return { type: 'balanced', openRatio: 0.5, guideRatio: 0.5 };
+  }
+  
+  // 7轮以上：结构化引导为主（30%开放+70%引导）
+  // 除非情绪在恶化，则回到倾听模式
+  if (trend === 'worsening') {
+    return { type: 'empathy_first', openRatio: 0.7, guideRatio: 0.3 };
+  }
+  
+  return { type: 'structured_guide', openRatio: 0.3, guideRatio: 0.7 };
+}
+
+// ===== 8. 容错与修复机制 =====
+// 检测对话偏离，主动重定向（DeepSeek式的3轮修复策略）
+function detectConversationDrift(messages) {
+  const userMsgs = messages.filter(m => m.sender === 'user');
+  if (userMsgs.length < 3) return { drifting: false };
+  
+  // 检测：用户连续3轮回复都很短（<=5字）且无实质内容
+  const recent3 = userMsgs.slice(-3);
+  const allShort = recent3.every(m => m.text.trim().length <= 5);
+  const hasNoKeywords = recent3.every(m => {
+    const msg = m.text.toLowerCase();
+    const substantiveKeywords = ['压力', '焦虑', '工作', '关系', '失眠', '低落', '情绪', '烦', '累', '难过', '孤独', '迷茫', '倦怠', '家庭', '感情', '害怕', '担心'];
+    return !substantiveKeywords.some(kw => msg.includes(kw));
+  });
+  
+  if (allShort && hasNoKeywords) {
+    return { drifting: true, type: 'short_responses' };
+  }
+  
+  // 检测：用户连续表达"不知道"/"没想法"
+  const uncertaintyPatterns = ['不知道', '没想法', '随便', '都行', '不确定', '说不上来'];
+  const recent2 = userMsgs.slice(-2);
+  const allUncertain = recent2.every(m => uncertaintyPatterns.some(p => m.text.toLowerCase().includes(p)));
+  if (allUncertain) {
+    return { drifting: true, type: 'uncertainty' };
+  }
+  
+  return { drifting: false };
+}
+
+// 生成修复回复
+function generateDriftRepair(driftType, currentTopic) {
+  if (driftType === 'short_responses') {
+    const repairs = [
+      '嗯，我注意到你好像不太想多说。没关系的，你可以按照自己的节奏来。\n\n如果你愿意，可以试试点击下面的快捷话题，选一个你感兴趣的聊聊？或者只是告诉我你现在的心情也好。',
+      '有时候确实不知道从何说起。不如我提几个方向，你看看哪个最想聊？\n\n1️⃣ 最近工作上的感受\n2️⃣ 和身边人的关系\n3️⃣ 睡眠和身体状态\n4️⃣ 对未来的想法',
+      '没关系，不用有压力。你可以先深呼吸一次，然后告诉我：现在最让你不舒服的是什么？哪怕只是一个词也行。'
+    ];
+    return repairs[Math.floor(Math.random() * repairs.length)];
+  }
+  
+  if (driftType === 'uncertainty') {
+    const repairs = [
+      '不确定也没关系。有时候感觉是模糊的，不需要马上理清。\n\n不如试试这个：闭上眼睛，感受一下身体哪个部位最不舒服？是胸口闷、肩膀紧、还是头胀？从身体的感觉开始，也许能找到一些线索。',
+      '「不知道」本身也是一种答案——说明你可能还在消化这些感受。\n\n我换个方式问：如果0分是完全不好，10分是完全好，你给自己现在的状态打几分？',
+      '没关系，我们慢慢来。你可以试着完成这个句子：「如果可以改变一件事，我想要……」——看看脑海中浮现的第一个念头是什么？'
+    ];
+    return repairs[Math.floor(Math.random() * repairs.length)];
+  }
+  
+  return null;
+}
+
 // ========== 增强版AI回复系统 ==========
 
 // 从用户消息中提取关键信息，用于生成更贴切的回复
@@ -612,25 +1253,45 @@ function generateContextualResponse(userMessage, conversationHistory) {
   return null;
 }
 
-function getAIResponse(userMessage, mood, messageCount, conversationHistory) {
+function getAIResponse(userMessage, mood, messageCount, conversationHistory, conversationState) {
   const msg = userMessage.toLowerCase();
+  
+  // ===== 获取对话状态（由组件传入） =====
+  const currentPhase = conversationState?.phase || CONVERSATION_PHASES.GREETING;
+  const currentTopic = conversationState?.topic || null;
+  const userMemory = conversationState?.memory || loadUserMemory();
+  const emotionState = trackEmotionTrend(conversationHistory);
+  const tone = getAdaptiveTone(emotionState);
+  const strategy = getResponseStrategy(messageCount, currentPhase, emotionState);
 
-  // 优先级1: 危机关键词检测
+  // ===== 优先级0: 容错与修复检测 =====
+  const driftResult = detectConversationDrift(conversationHistory);
+  if (driftResult.drifting) {
+    const repair = generateDriftRepair(driftResult.type, currentTopic);
+    if (repair) return repair;
+  }
+
+  // ===== 优先级1: 危机关键词检测 =====
   if (detectCrisis(msg)) {
     return getCrisisResponse();
   }
 
-  // 优先级2: 基础对话模式（打招呼/自我介绍/功能询问等）
+  // ===== 优先级2: 基础对话模式 =====
   for (const pattern of basicPatterns) {
     if (pattern.keywords.some(kw => msg.includes(kw))) {
-      return pattern.responses[Math.floor(Math.random() * pattern.responses.length)];
+      let response = pattern.responses[Math.floor(Math.random() * pattern.responses.length)];
+      // 个性化增强：如果知道用户名字，在问候中加入
+      if (userMemory.name && (msg.includes('你好') || msg.includes('嗨') || msg.includes('hi'))) {
+        response = `${userMemory.name}，${response}`;
+      }
+      return response;
     }
   }
 
-  // 优先级3: 文章智能匹配
+  // ===== 优先级3: 文章智能匹配 =====
   const articleMatch = matchArticle(userMessage);
 
-  // 优先级4: 关键词匹配（专业心理话题）
+  // ===== 优先级4: 关键词匹配（专业心理话题） =====
   let baseResponse = null;
   for (const pattern of responsePatterns) {
     if (pattern.keywords.some(kw => msg.includes(kw))) {
@@ -640,48 +1301,95 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory) {
     }
   }
 
-  // 如果有baseResponse，进行流派+文章双重增强
+  // ===== 如果有baseResponse，进行多层增强 =====
   if (baseResponse) {
-    // 流派智能增强（约40%概率追加流派洞察）
+    // 分层共情前缀（基于情感状态）
+    const empathy = generateLayeredEmpathy(userMessage, emotionState, currentPhase);
+    let finalResponse = '';
+    
+    // 浅层共情（总是添加）
+    if (empathy.shallowEmpathy && tone.empathy >= 0.7) {
+      finalResponse = empathy.shallowEmpathy + '\n\n';
+    }
+    
+    finalResponse += baseResponse;
+    
+    // 深层共情（exploring/deepening阶段，高共情需求时）
+    if (empathy.deepEmpathy && tone.empathy >= 0.85 && Math.random() < 0.4) {
+      finalResponse += '\n\n' + empathy.deepEmpathy;
+    }
+    
+    // 流派智能增强
     const schoolMatch = matchSchool(userMessage);
     if (schoolMatch && Math.random() < 0.4) {
       const insight = getSchoolInsight(schoolMatch.school);
       if (insight) {
-        baseResponse += '\n\n' + insight;
+        finalResponse += '\n\n' + insight;
       }
     }
-    // 约25%概率追加名言
+    // 名言增强
     if (schoolMatch && Math.random() < 0.25) {
       const quote = getRelevantQuote(schoolMatch.quoteScenarios);
       if (quote) {
-        baseResponse += '\n\n' + quote;
+        finalResponse += '\n\n' + quote;
       }
     }
-    // 约30%概率追加文章增强内容（与流派/名言增强独立）
+    // 文章增强
     if (articleMatch && Math.random() < 0.3) {
       const articleEnhancement = getArticleEnhancement(articleMatch);
       if (articleEnhancement) {
-        baseResponse += '\n\n' + articleEnhancement;
+        finalResponse += '\n\n' + articleEnhancement;
       }
     }
-    return baseResponse;
+    
+    // 主动追问（基于策略：开放式阶段更可能追问）
+    if (strategy.openRatio >= 0.5 && Math.random() < 0.5) {
+      const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
+      finalResponse += '\n\n' + followUp;
+    }
+    
+    // 行动引导（supporting阶段或情绪好转时）
+    if (empathy.actionGuidance && tone.guidance >= 0.6 && Math.random() < 0.4) {
+      finalResponse += '\n\n' + empathy.actionGuidance;
+    }
+    
+    return finalResponse;
   }
 
-  // 优先级5: 如果没有baseResponse但有强文章匹配，约35%概率使用文章的suggestedResponse
+  // ===== 优先级5: 文章suggestedResponse =====
   if (articleMatch && Math.random() < 0.35) {
     const articleResponse = getArticleFullResponse(articleMatch);
     if (articleResponse) {
+      // 追加追问
+      if (strategy.openRatio >= 0.5) {
+        const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
+        return articleResponse + '\n\n' + followUp;
+      }
       return articleResponse;
     }
   }
 
-  // 优先级6: 上下文感知回复（提取用户关注点+对话历史）
+  // ===== 优先级6: 上下文感知回复 =====
   const contextualResponse = generateContextualResponse(userMessage, conversationHistory);
   if (contextualResponse) {
-    return contextualResponse;
+    let finalResponse = contextualResponse;
+    
+    // 情感自适应：如果情绪恶化，增加共情前缀
+    if (emotionState.trend === 'worsening') {
+      const empathy = generateShallowEmpathy(msg, emotionState.current);
+      finalResponse = empathy + '\n\n' + finalResponse;
+    }
+    
+    // 策略性追问
+    if (strategy.openRatio >= 0.5 && Math.random() < 0.4) {
+      const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
+      finalResponse += '\n\n' + followUp;
+    }
+    
+    return finalResponse;
   }
 
-  // 优先级7: 简短回复鼓励展开
+  // ===== 优先级7: 简短回复+主动追问 =====
   if (msg.length <= 5) {
     const shortReplies = [
       '嗯，我在听。能多说一些吗？',
@@ -689,38 +1397,93 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory) {
       '谢谢你的回应。能告诉我更多细节吗？',
       '我在。不用急，慢慢说。'
     ];
-    return shortReplies[Math.floor(Math.random() * shortReplies.length)];
+    let response = shortReplies[Math.floor(Math.random() * shortReplies.length)];
+    
+    // 主动追问：基于当前话题
+    if (currentTopic) {
+      const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
+      response += '\n\n' + followUp;
+    }
+    
+    return response;
   }
 
-  // 优先级8: 通用回复（回显用户内容+流派/文章增强）
-  // 从用户消息中提取关键词用于回显
+  // ===== 优先级8: 通用回复+多层增强 =====
   const userWords = msg.replace(/[，。！？、；：""''（）\[\]{}.,!?;:'"()\s]/g, '').slice(0, 20);
-  const echoReplies = [
-    `你提到了「${userWords.slice(0, 8)}……」，我听到了。能再详细说说吗？我想更好地理解你的感受。`,
-    `谢谢你愿意和我说这些。你说的这些，最让你困扰的是哪一点？`,
-    `我理解你的感受。这种情况确实不容易面对。你之前有尝试过什么方式来应对吗？`,
-    `你的感受值得被认真对待。让我们一起看看，怎么让你感觉好一些？`,
-    `我听到了你说的话。你愿意继续展开说说吗？我在这里认真听着。`,
-    `谢谢你信任我，和我分享这些。你觉得现在最困扰你的是什么？`
-  ];
-  const generalBase = echoReplies[Math.floor(Math.random() * echoReplies.length)];
-  const schoolMatch = matchSchool(userMessage);
   
-  // 优先尝试文章增强
+  // 基于对话阶段和策略选择不同的通用回复风格
+  let generalBase;
+  
+  if (currentPhase === CONVERSATION_PHASES.DEEPENING) {
+    // 深入阶段：更多共情和探索
+    const deepReplies = [
+      `你提到了「${userWords.slice(0, 8)}……」，这对你来说意味着什么？`,
+      `谢谢你愿意深入分享。在这件事中，你内心最深的感受是什么？`,
+      `我听到了。你觉得这些感受背后，隐藏着什么样的需要？`,
+      `你能说出这些，说明你在认真面对自己。这种感受是什么时候开始的？`
+    ];
+    generalBase = deepReplies[Math.floor(Math.random() * deepReplies.length)];
+  } else if (currentPhase === CONVERSATION_PHASES.SUPPORTING) {
+    // 支持阶段：更多引导
+    const supportReplies = [
+      `我理解你的感受。让我们一起来看看，有什么具体的步骤可以帮你感觉好一些？`,
+      `你说的这些我都记住了。现在，你愿意试试一个小方法吗？`,
+      `谢谢你告诉我。基于你说的，我想给你一个建议——`,
+      `你的感受值得被认真对待。接下来我们可以一起找找解决办法。`
+    ];
+    generalBase = supportReplies[Math.floor(Math.random() * supportReplies.length)];
+  } else if (currentPhase === CONVERSATION_PHASES.CLOSING) {
+    // 收尾阶段：温暖总结
+    const closingReplies = [
+      `谢谢你今天的分享。记住，任何时候你需要，我都在这里 💚`,
+      `和你聊天很愉快。照顾好自己，有需要随时来找我 🤗`,
+      `你今天的勇气——愿意表达和寻求支持——本身就是一种力量。保重 💚`
+    ];
+    generalBase = closingReplies[Math.floor(Math.random() * closingReplies.length)];
+  } else {
+    // 探索阶段：开放式引导
+    const echoReplies = [
+      `你提到了「${userWords.slice(0, 8)}……」，我听到了。能再详细说说吗？`,
+      `谢谢你愿意和我说这些。你说的这些，最让你困扰的是哪一点？`,
+      `我理解你的感受。这种情况确实不容易面对。你之前有尝试过什么方式来应对吗？`,
+      `你的感受值得被认真对待。让我们一起看看，怎么让你感觉好一些？`,
+      `我听到了你说的话。你愿意继续展开说说吗？我在这里认真听着。`,
+      `谢谢你信任我，和我分享这些。你觉得现在最困扰你的是什么？`
+    ];
+    generalBase = echoReplies[Math.floor(Math.random() * echoReplies.length)];
+  }
+  
+  // 分层共情增强
+  const empathy = generateLayeredEmpathy(userMessage, emotionState, currentPhase);
+  if (empathy.shallowEmpathy && tone.empathy >= 0.7) {
+    generalBase = empathy.shallowEmpathy + '\n\n' + generalBase;
+  }
+  
+  // 流派/文章增强
+  const schoolMatch = matchSchool(userMessage);
   if (articleMatch && Math.random() < 0.3) {
     const articleEnhancement = getArticleEnhancement(articleMatch);
     if (articleEnhancement) {
-      return generalBase + '\n\n' + articleEnhancement;
+      generalBase += '\n\n' + articleEnhancement;
+    }
+  } else if (schoolMatch && Math.random() < 0.3) {
+    const insight = getSchoolInsight(schoolMatch.school);
+    if (insight) {
+      generalBase += '\n\n' + insight;
     }
   }
   
-  // 其次尝试流派增强
-  if (schoolMatch && Math.random() < 0.3) {
-    const insight = getSchoolInsight(schoolMatch.school);
-    if (insight) {
-      return generalBase + '\n\n' + insight;
-    }
+  // 主动追问
+  if (strategy.openRatio >= 0.5 && Math.random() < 0.35) {
+    const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
+    generalBase += '\n\n' + followUp;
   }
+  
+  // 行动引导
+  if (empathy.actionGuidance && tone.guidance >= 0.6 && Math.random() < 0.3) {
+    generalBase += '\n\n' + empathy.actionGuidance;
+  }
+  
   return generalBase;
 }
 
@@ -738,21 +1501,42 @@ export default function Chat() {
   const [showTopics, setShowTopics] = useState(true);
   const [tipCount, setTipCount] = useState(0);
   const messagesEndRef = useRef(null);
+  
+  // ===== 深度对话系统状态 =====
+  const [conversationPhase, setConversationPhase] = useState(CONVERSATION_PHASES.GREETING);
+  const [currentTopic, setCurrentTopic] = useState(null);
+  const [userMemory, setUserMemory] = useState(() => loadUserMemory());
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
+  // 组件加载时更新访问次数
+  useEffect(() => {
+    if (user) {
+      const updatedMemory = { ...userMemory, visitCount: (userMemory.visitCount || 0) + 1 };
+      setUserMemory(updatedMemory);
+      saveUserMemory(updatedMemory);
+    }
+  }, []);
+
   const handleMoodSelect = (selectedMood) => {
     setMood(selectedMood);
     const responses = moodResponses[selectedMood.level];
     const aiReply = responses[Math.floor(Math.random() * responses.length)];
+    
+    // 个性化开场：如果之前有记忆，加入个性化问候
+    const personalizedGreeting = getPersonalizedGreeting(userMemory);
+    const greetingPrefix = personalizedGreeting ? `${personalizedGreeting}\n\n` : '';
+    
+    // 更新对话阶段
+    setConversationPhase(CONVERSATION_PHASES.GREETING);
 
     setMessages([
       {
         id: 1,
         sender: 'ai',
-        text: `你好呀，我是${AI_NAME}，你的AI心灵伙伴 🤗\n\n我看到你今天的心情是 ${selectedMood.emoji} ${selectedMood.label}。\n\n${aiReply}`,
+        text: `${greetingPrefix}你好呀，我是${AI_NAME}，你的AI心灵伙伴 🤗\n\n我看到你今天的心情是 ${selectedMood.emoji} ${selectedMood.label}。\n\n${aiReply}`,
         time: formatTime(new Date())
       }
     ]);
@@ -775,15 +1559,41 @@ export default function Chat() {
       time: formatTime(new Date())
     };
 
+    // ===== 更新个性化记忆 =====
+    const updatedMemory = extractMemoryFromMessage(text, userMemory);
+    if (JSON.stringify(updatedMemory) !== JSON.stringify(userMemory)) {
+      setUserMemory(updatedMemory);
+      saveUserMemory(updatedMemory);
+    }
+
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
     setShowTopics(false);
 
-    // 模拟AI回复
+    // ===== 更新对话状态 =====
+    const newMessages = [...messages, userMsg];
+    const newPhase = determineConversationPhase(newMessages.length, newMessages, conversationPhase);
+    setConversationPhase(newPhase);
+    
+    // 更新话题追踪
+    const topicResult = detectTopicSwitch(newMessages, currentTopic);
+    if (topicResult.switched && topicResult.newTopic) {
+      setCurrentTopic(topicResult.newTopic);
+    } else if (!currentTopic) {
+      const detectedTopic = detectCurrentTopic(newMessages);
+      if (detectedTopic) setCurrentTopic(detectedTopic);
+    }
+
+    // 模拟AI回复（带对话状态）
     const delay = 800 + Math.random() * 1500;
     setTimeout(() => {
-      const aiText = getAIResponse(text, mood, messages.length, messages);
+      const conversationState = {
+        phase: newPhase,
+        topic: topicResult.newTopic || currentTopic,
+        memory: updatedMemory
+      };
+      const aiText = getAIResponse(text, mood, newMessages.length, newMessages, conversationState);
       const aiMsg = {
         id: Date.now() + 1,
         sender: 'ai',
@@ -824,6 +1634,9 @@ export default function Chat() {
     setMessages([]);
     setShowTopics(true);
     setTipCount(0);
+    // 重置对话状态
+    setConversationPhase(CONVERSATION_PHASES.GREETING);
+    setCurrentTopic(null);
   };
 
   if (!user) {

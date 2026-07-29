@@ -1706,13 +1706,15 @@ export default function Chat() {
       saveUserMemory(updatedMemory);
     }
 
-    setMessages(prev => [...prev, userMsg]);
+    // 先计算包含新消息的完整对话历史
+    const newMessages = [...messages, userMsg];
+    
+    setMessages(newMessages);
     setInput('');
     setIsTyping(true);
     setShowTopics(false);
 
     // ===== 更新对话状态 =====
-    const newMessages = [...messages, userMsg];
     const newPhase = determineConversationPhase(newMessages.length, newMessages, conversationPhase);
     setConversationPhase(newPhase);
     

@@ -1730,19 +1730,31 @@ export default function Chat() {
     // 模拟AI回复（带对话状态）
     const delay = 800 + Math.random() * 1500;
     setTimeout(() => {
-      const conversationState = {
-        phase: newPhase,
-        topic: topicResult.newTopic || currentTopic,
-        memory: updatedMemory
-      };
-      const aiText = getAIResponse(text, mood, newMessages.length, newMessages, conversationState);
-      const aiMsg = {
-        id: Date.now() + 1,
-        sender: 'ai',
-        text: aiText,
-        time: formatTime(new Date())
-      };
-      setMessages(prev => [...prev, aiMsg]);
+      try {
+        const conversationState = {
+          phase: newPhase,
+          topic: topicResult.newTopic || currentTopic,
+          memory: updatedMemory
+        };
+        const aiText = getAIResponse(text, mood, newMessages.length, newMessages, conversationState);
+        const aiMsg = {
+          id: Date.now() + 1,
+          sender: 'ai',
+          text: aiText || '我听到了你说的话，能再多告诉我一些吗？',
+          time: formatTime(new Date())
+        };
+        setMessages(prev => [...prev, aiMsg]);
+      } catch (e) {
+        // 如果AI回复生成出错，给出兜底回复
+        console.error('AI回复生成错误:', e);
+        const fallbackMsg = {
+          id: Date.now() + 1,
+          sender: 'ai',
+          text: '我听到了，能再多说说吗？我想更好地理解你的感受。',
+          time: formatTime(new Date())
+        };
+        setMessages(prev => [...prev, fallbackMsg]);
+      }
       setIsTyping(false);
 
       // 每3条消息推送一条关怀建议

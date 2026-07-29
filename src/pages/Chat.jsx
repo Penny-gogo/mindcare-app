@@ -1684,8 +1684,7 @@ export default function Chat() {
   };
 
   const handleTopicClick = (topic) => {
-    setInput(topic.text);
-    setShowTopics(false);
+    handleSend(topic.text);
   };
 
   const handleSend = (customInput) => {

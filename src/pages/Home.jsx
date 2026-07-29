@@ -20,38 +20,37 @@ export default function Home() {
       {/* Hero Section */}
       <section className="hero">
         <div className="hero-content">
-          <div className="hero-badge">EAP 员工心理援助计划 · 循证实践</div>
-          <h1>每一份心事，<br/>都值得被温柔以待</h1>
+          <h1>嘿，你还好吗？<br/>这里有人想听你说</h1>
           <p className="hero-desc">
-            MindCare 融合认知行为疗法（CBT）、正念减压（MBSR）与EAP行业标准，
-            为你提供专业、私密、温暖的心理支持。
-            <span className="hero-highlight">不是教条式的说教，而是懂你的陪伴。</span>
+            生活有时候挺难的，工作压力、情绪低落、睡不好觉……
+            这些都不是矫情，而是你值得被认真对待的感受。
+            <span className="hero-highlight">小暖在这里，随时陪你聊聊。</span>
           </p>
           <div className="hero-actions">
             {user ? (
               <>
                 <Link to="/chat" className="btn-primary">和小暖聊聊</Link>
-                <Link to="/assessment" className="btn-secondary">心理测评</Link>
+                <Link to="/assessment" className="btn-secondary">了解自己的状态</Link>
               </>
             ) : (
               <>
-                <Link to="/register" className="btn-primary">免费加入</Link>
-                <Link to="/login" className="btn-secondary">登录账号</Link>
+                <Link to="/register" className="btn-primary">开始使用</Link>
+                <Link to="/login" className="btn-secondary">已有账号</Link>
               </>
             )}
           </div>
           <div className="hero-stats">
             <div className="stat">
-              <span className="stat-number">100%</span>
-              <span className="stat-label">隐私保密</span>
+              <span className="stat-number">🔒</span>
+              <span className="stat-label">你的心事只有你知道</span>
             </div>
             <div className="stat">
-              <span className="stat-number">24/7</span>
-              <span className="stat-label">随时陪伴</span>
+              <span className="stat-number">🌙</span>
+              <span className="stat-label">任何时候都在</span>
             </div>
             <div className="stat">
-              <span className="stat-number">14+</span>
-              <span className="stat-label">专业知识模块</span>
+              <span className="stat-number">💚</span>
+              <span className="stat-label">不带评判地倾听</span>
             </div>
           </div>
           <div className="daily-quote">
@@ -82,20 +81,20 @@ export default function Home() {
       {/* Two Core Modules */}
       <section className="modules-section">
         <div className="section-header">
-          <h2>两大核心模块</h2>
-          <p>基于EAP行业标准，全方位守护你的心理健康</p>
+          <h2>当你需要的时候，我们都在</h2>
+          <p>两个温暖的角落，随时等你来</p>
         </div>
         <div className="modules-grid">
           <Link to="/chat" className="module-card">
             <div className="module-icon" style={{ background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)' }}>
               🤗
             </div>
-            <h3>AI 心灵伙伴「小暖」</h3>
-            <p>融合CBT认知重构、正念呼吸、焦虑自救等专业技巧，当你感到焦虑、压力、迷茫时，小暖会倾听、理解、温暖你——用专业的方式。</p>
+            <h3>和小暖聊天</h3>
+            <p>焦虑了、压力大了、睡不着了，或者就是心里有点堵——和小暖说说，ta会认真听你讲，陪你理一理思绪，给你一些暖暖的建议。</p>
             <div className="module-features">
-              <span className="feature-tag">CBT技巧</span>
-              <span className="feature-tag">正念引导</span>
-              <span className="feature-tag">情绪急救</span>
+              <span className="feature-tag">随时倾听</span>
+              <span className="feature-tag">帮你放松</span>
+              <span className="feature-tag">温暖陪伴</span>
             </div>
             <span className="module-arrow">→</span>
           </Link>
@@ -104,48 +103,48 @@ export default function Home() {
             <div className="module-icon" style={{ background: 'linear-gradient(135deg, #00b894, #55efc4)' }}>
               🎯
             </div>
-            <h3>心理测评</h3>
-            <p>参考北大《学生心理健康》课程体系，从认知自我、探索自我到发展自我，用科学的方式了解你的心理状态。</p>
+            <h3>测一测心理状态</h3>
+            <p>最近压力有多大？情绪怎么样？不是考试，没有对错，只是帮你更了解自己，看看哪里需要多一点关心。</p>
             <div className="module-features">
-              <span className="feature-tag">压力评估</span>
-              <span className="feature-tag">情绪画像</span>
-              <span className="feature-tag">专业建议</span>
+              <span className="feature-tag">简单几步</span>
+              <span className="feature-tag">了解自己</span>
+              <span className="feature-tag">贴心建议</span>
             </div>
             <span className="module-arrow">→</span>
           </Link>
         </div>
       </section>
 
-      {/* Professional Backing */}
+      {/* Why Trust Us - warmer version */}
       <section className="professional-section">
         <div className="section-header">
-          <h2>专业，是我们守护你的底气</h2>
-          <p>融合EAP行业标准与国内顶尖高校心理服务体系最佳实践</p>
+          <h2>你可以放心地打开自己</h2>
+          <p>我们认真对待你说的每一句话</p>
         </div>
         <div className="professional-grid">
           <div className="pro-card">
-            <div className="pro-icon">📋</div>
-            <h3>EAP 六步标准流程</h3>
-            <p>调查分析 → 心理普及 → 培训教育 → 心理咨询 → 转介干预 → 效果评估</p>
-            <span className="pro-tag">国际EAP协会标准</span>
+            <div className="pro-icon">🤝</div>
+            <h3>真的在听你说话</h3>
+            <p>小暖不是冷冰冰的机器人，ta会记住你说过的话，关心你之前提到的困扰，在你需要的时候主动问候。</p>
+            <span className="pro-tag">有温度的陪伴</span>
           </div>
           <div className="pro-card">
             <div className="pro-icon">🧠</div>
-            <h3>循证心理方法</h3>
-            <p>CBT认知行为疗法 · MBSR正念减压 · SFBT焦点解决 · 叙事治疗</p>
-            <span className="pro-tag">经临床验证有效</span>
+            <h3>方法是有用的</h3>
+            <p>呼吸放松、情绪梳理、压力管理……小暖给你的建议都来自经过验证的心理学方法，真的能帮到你。</p>
+            <span className="pro-tag">不只是安慰</span>
           </div>
           <div className="pro-card">
-            <div className="pro-icon">🎓</div>
-            <h3>高校体系借鉴</h3>
-            <p>北师大朋辈互助 · 北大24小时热线 · 华东师大科普创作 · 三校危机干预流程</p>
-            <span className="pro-tag">学术权威支撑</span>
+            <div className="pro-icon">🔐</div>
+            <h3>你的秘密只有你知道</h3>
+            <p>聊天记录只存在你的手机上，不会传到任何服务器，没有人能看到你说了什么。</p>
+            <span className="pro-tag">完全私密</span>
           </div>
           <div className="pro-card">
-            <div className="pro-icon">🛡️</div>
-            <h3>三级支持体系</h3>
-            <p>AI专业疏导 → 科学测评 → 医疗转介（危机热线）</p>
-            <span className="pro-tag">分层响应机制</span>
+            <div className="pro-icon">🆘</div>
+            <h3>困难时刻，有人守候</h3>
+            <p>如果你提到了伤害自己的想法，小暖会立刻给你专业的求助热线，24小时都有人接听。</p>
+            <span className="pro-tag">安全底线</span>
           </div>
         </div>
       </section>
@@ -153,27 +152,27 @@ export default function Home() {
       {/* How it works */}
       <section className="steps-section">
         <div className="section-header">
-          <h2>如何开始</h2>
-          <p>三步开启你的心灵守护之旅</p>
+          <h2>很简单，三步就好</h2>
+          <p>不需要准备什么，随时可以开始</p>
         </div>
         <div className="steps-grid">
           <div className="step-card">
             <div className="step-number">1</div>
-            <div className="step-icon">🔐</div>
-            <h3>安全登录</h3>
-            <p>使用公司邮箱注册，你的信息完全保密，EAP标准保障</p>
+            <div className="step-icon">✨</div>
+            <h3>注册一下</h3>
+            <p>很快的，就填个基本信息</p>
           </div>
           <div className="step-card">
             <div className="step-number">2</div>
             <div className="step-icon">💬</div>
-            <h3>选择方式</h3>
-            <p>AI专业疏导、科学测评，随你选择</p>
+            <h3>选个方式</h3>
+            <p>和小暖聊天，或者先测一测自己的状态</p>
           </div>
           <div className="step-card">
             <div className="step-number">3</div>
             <div className="step-icon">🌿</div>
-            <h3>获得支持</h3>
-            <p>收获理解、专业建议和温暖陪伴，让心灵重获力量</p>
+            <h3>感觉好一点</h3>
+            <p>被理解、被陪伴，心里会轻松一些</p>
           </div>
         </div>
       </section>
@@ -182,26 +181,26 @@ export default function Home() {
       <section className="privacy-section">
         <div className="privacy-card">
           <div className="privacy-icon">🛡️</div>
-          <h2>隐私保护承诺</h2>
+          <h2>你的隐私，我们很认真</h2>
           <p>
-            我们深知隐私对你的重要性。MindCare EAP 严格遵守以下原则：
+            我们知道，只有你感到安全，才愿意打开自己。
           </p>
           <div className="privacy-items">
             <div className="privacy-item">
               <span className="privacy-check">✓</span>
-              <span>AI对话记录仅保存在你的设备，完全私密</span>
+              <span>聊天记录只存在你的设备上，别人看不到</span>
             </div>
             <div className="privacy-item">
               <span className="privacy-check">✓</span>
-              <span>AI对话记录加密存储，仅你可见</span>
+              <span>测评结果只有你自己知道</span>
             </div>
             <div className="privacy-item">
               <span className="privacy-check">✓</span>
-              <span>测评结果不会与绩效评估关联</span>
+              <span>不会和你的工作表现挂钩</span>
             </div>
             <div className="privacy-item">
               <span className="privacy-check">✓</span>
-              <span>主管和HRBP仅能看到团队整体趋势</span>
+              <span>你的名字和信息，我们替你守着</span>
             </div>
           </div>
         </div>
@@ -211,7 +210,7 @@ export default function Home() {
       <section className="crisis-section">
         <div className="section-header">
           <h2>如果你正经历困难时刻</h2>
-          <p>这些专业热线24小时为你守候</p>
+          <p>这些热线24小时为你守候，打一个电话就有人听你说</p>
         </div>
         <div className="crisis-grid">
           <div className="crisis-card">
@@ -238,12 +237,12 @@ export default function Home() {
 
       {/* CTA */}
       <section className="cta-section">
-        <h2>现在就开始，给自己一份关怀</h2>
-        <p>无论何时何地，MindCare 都在这里等你</p>
+        <h2>给自己几分钟，和心里那个人聊聊</h2>
+        <p>无论什么时候，小暖都在</p>
         {user ? (
           <Link to="/chat" className="btn-primary btn-lg">和小暖聊聊</Link>
         ) : (
-          <Link to="/register" className="btn-primary btn-lg">免费注册</Link>
+          <Link to="/register" className="btn-primary btn-lg">开始吧，免费的</Link>
         )}
       </section>
     </div>

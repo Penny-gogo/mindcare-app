@@ -33,9 +33,8 @@ export default function Register() {
     }
 
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
 
-    const result = register(name, email, password);
+    const result = await register(name, email, password);
     if (result.success) {
       navigate('/');
     } else {

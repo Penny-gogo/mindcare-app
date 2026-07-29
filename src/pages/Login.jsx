@@ -22,10 +22,8 @@ export default function Login() {
       return;
     }
 
-    // 模拟网络延迟
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const result = login(email, password);
+    // API调用本身有延迟，无需模拟
+    const result = await login(email, password);
     if (result.success) {
       navigate('/');
     } else {

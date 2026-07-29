@@ -31,14 +31,14 @@ export default function CounselorDetail() {
     return d;
   });
 
-  const handleBook = () => {
+  const handleBook = async () => {
     if (!user) {
       navigate('/login');
       return;
     }
     if (!selectedDate || !selectedSlot) return;
 
-    addAppointment({
+    await addAppointment({
       counselorId: counselor.id,
       counselorName: counselor.name,
       counselorAvatar: counselor.avatar,

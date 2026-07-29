@@ -16,9 +16,9 @@ export default function TreeHole() {
 
   const isManager = user && (user.role === 'manager' || user.role === 'hrbp');
 
-  const handleAddPost = () => {
+  const handleAddPost = async () => {
     if (!newContent.trim()) return;
-    addPost(newContent.trim(), selectedTags);
+    await addPost(newContent.trim(), selectedTags);
     setNewContent('');
     setSelectedTags([]);
     setShowNewPost(false);
@@ -30,9 +30,9 @@ export default function TreeHole() {
     );
   };
 
-  const handleAddComment = (postId) => {
+  const handleAddComment = async (postId) => {
     if (!commentText.trim()) return;
-    addComment(postId, commentText.trim());
+    await addComment(postId, commentText.trim());
     setCommentText('');
   };
 

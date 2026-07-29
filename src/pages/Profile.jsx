@@ -15,8 +15,8 @@ export default function Profile() {
     return null;
   }
 
-  const handleSave = () => {
-    updateProfile({ name });
+  const handleSave = async () => {
+    await updateProfile({ name });
     setEditing(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);

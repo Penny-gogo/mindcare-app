@@ -10,6 +10,7 @@ import Profile from './pages/Profile';
 import Appointments from './pages/Appointments';
 import TreeHole from './pages/TreeHole';
 import Assessment from './pages/Assessment';
+import Knowledge from './pages/Knowledge';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
         <Route path="appointments" element={<Appointments />} />
         <Route path="treehole" element={<TreeHole />} />
         <Route path="assessment" element={<Assessment />} />
+        <Route path="knowledge" element={<Knowledge />} />
       </Route>
     </Routes>
   );

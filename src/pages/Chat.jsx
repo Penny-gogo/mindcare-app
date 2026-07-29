@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import knowledgeBase from '../data/knowledge/index';
 import psychologySchools from '../data/knowledge/psychologySchools';
 import psychologistQuotes from '../data/knowledge/psychologistQuotes';
+import articleCollectionData from '../data/knowledge/articleCollection';
+const articleCollection = articleCollectionData;
 import './Chat.css';
 
 const AI_NAME = '小暖';
@@ -362,6 +364,98 @@ function getRelevantQuote(scenarios) {
   return `📖 ${selected.author}：「${selected.text}」\n💬 ${selected.warmReading}`;
 }
 
+// ========== 文章智能匹配系统 ==========
+// 根据用户问题匹配articleCollection中最相关的文章，提取结构化内容增强回复
+const articleCategoryMap = {
+  emotionManagement: {
+    keywords: ['情绪', '心情', '难过', '低落', '愤怒', '悲伤', '开心', '抑郁', '情绪管理', '情绪调节', '压抑', '发泄', '控制情绪'],
+  },
+  workplacePsychology: {
+    keywords: ['职场', '工作', '同事', '领导', '老板', '上班', '职业', '职场心理', '996', '加班', '倦怠', '摸鱼', '内卷', '裁员', '升职'],
+  },
+  interpersonalRelationships: {
+    keywords: ['人际', '社交', '朋友', '沟通', '冲突', '社交恐惧', '社恐', '合群', '孤立', '人缘', '相处'],
+  },
+  intimateRelationships: {
+    keywords: ['恋爱', '伴侣', '爱情', '分手', '感情', '亲密', '婚姻', '老公', '老婆', '男友', '女友', '约会', '暗恋', '出轨'],
+  },
+  selfDevelopment: {
+    keywords: ['自我', '成长', '自信', '自尊', '价值', '认同', '发现自己', '潜力', '迷茫', '目标', '人生方向', '内向'],
+  },
+  familyOfOrigin: {
+    keywords: ['原生家庭', '父母', '家庭', '童年', '亲子', '家人', '妈妈', '爸爸', '婆媳', '养育', '家暴', '控制型父母'],
+  },
+  stressAndResilience: {
+    keywords: ['压力', '韧性', '抗压', '崩溃', '挫折', '困境', '逆境', '压力管理', '复原力', '撑不住', '喘不过气', '扛不住'],
+  },
+  sleepAndHealth: {
+    keywords: ['睡眠', '失眠', '睡不着', '躯体化', '身心', '头痛', '胃痛', '早醒', '多梦', '身体不适', '胸闷', '肩颈'],
+  },
+};
+
+// 根据用户消息匹配最相关的文章分类和文章
+function matchArticle(userMessage) {
+  const msg = userMessage.toLowerCase();
+  let bestCategory = null;
+  let maxScore = 0;
+
+  for (const [categoryKey, config] of Object.entries(articleCategoryMap)) {
+    const score = config.keywords.filter(kw => msg.includes(kw)).length;
+    if (score > maxScore) {
+      maxScore = score;
+      bestCategory = categoryKey;
+    }
+  }
+
+  if (!bestCategory || !articleCollection.categories[bestCategory]) return null;
+
+  const category = articleCollection.categories[bestCategory];
+  const articles = category.articles;
+  if (!articles || articles.length === 0) return null;
+
+  // 从该分类中随机选一篇文章
+  const article = articles[Math.floor(Math.random() * articles.length)];
+
+  return { categoryKey, categoryName: category.name, article };
+}
+
+// 从文章数据中提取增强内容，构建回复片段
+function getArticleEnhancement(articleMatch) {
+  if (!articleMatch) return null;
+
+  const { article } = articleMatch;
+  const parts = [];
+
+  // 提取核心洞察（选1条）
+  if (article.coreInsights?.length) {
+    const insight = article.coreInsights[Math.floor(Math.random() * article.coreInsights.length)];
+    parts.push(`📚 研究发现：${insight.insight}（${insight.evidence}）`);
+  }
+
+  // 提取实操建议（选1条）
+  if (article.practicalTips?.length) {
+    const tip = article.practicalTips[Math.floor(Math.random() * article.practicalTips.length)];
+    const stepsText = tip.steps.slice(0, 3).join('→');
+    parts.push(`💡 【${tip.tip}】${stepsText}${tip.steps.length > 3 ? '→...' : ''}`);
+  }
+
+  // 提取温暖话术（选1条，50%概率）
+  if (article.warmPhrases?.length && Math.random() < 0.5) {
+    const warm = article.warmPhrases[Math.floor(Math.random() * article.warmPhrases.length)];
+    parts.push(`💚 ${warm.phrase}`);
+  }
+
+  return parts.length > 0 ? parts.join('\n') : null;
+}
+
+// 使用文章的aiIntegration.suggestedResponse作为完整回复
+function getArticleFullResponse(articleMatch) {
+  if (!articleMatch) return null;
+  const { article } = articleMatch;
+  if (!article.aiIntegration?.suggestedResponse) return null;
+  return article.aiIntegration.suggestedResponse;
+}
+
 // ========== 增强版AI回复系统 ==========
 function getAIResponse(userMessage, mood, messageCount) {
   const msg = userMessage.toLowerCase();
@@ -370,6 +464,9 @@ function getAIResponse(userMessage, mood, messageCount) {
   if (detectCrisis(msg)) {
     return getCrisisResponse();
   }
+
+  // 文章智能匹配（优先级较高，当匹配到相关文章时有概率使用文章的suggestedResponse）
+  const articleMatch = matchArticle(userMessage);
 
   // 检查关键词匹配（原有逻辑）
   let baseResponse = null;
@@ -381,8 +478,9 @@ function getAIResponse(userMessage, mood, messageCount) {
     }
   }
 
-  // 流派智能增强（约40%概率追加流派洞察，避免每条回复都过长）
+  // 如果有baseResponse，进行流派+文章双重增强
   if (baseResponse) {
+    // 流派智能增强（约40%概率追加流派洞察）
     const schoolMatch = matchSchool(userMessage);
     if (schoolMatch && Math.random() < 0.4) {
       const insight = getSchoolInsight(schoolMatch.school);
@@ -390,14 +488,29 @@ function getAIResponse(userMessage, mood, messageCount) {
         baseResponse += '\n\n' + insight;
       }
     }
-    // 约25%概率追加名言（与流派增强独立）
+    // 约25%概率追加名言
     if (schoolMatch && Math.random() < 0.25) {
       const quote = getRelevantQuote(schoolMatch.quoteScenarios);
       if (quote) {
         baseResponse += '\n\n' + quote;
       }
     }
+    // 约30%概率追加文章增强内容（与流派/名言增强独立）
+    if (articleMatch && Math.random() < 0.3) {
+      const articleEnhancement = getArticleEnhancement(articleMatch);
+      if (articleEnhancement) {
+        baseResponse += '\n\n' + articleEnhancement;
+      }
+    }
     return baseResponse;
+  }
+
+  // 如果没有baseResponse但有强文章匹配，约35%概率使用文章的suggestedResponse作为完整回复
+  if (articleMatch && Math.random() < 0.35) {
+    const articleResponse = getArticleFullResponse(articleMatch);
+    if (articleResponse) {
+      return articleResponse;
+    }
   }
 
   // 如果是简短回复，鼓励展开
@@ -411,9 +524,19 @@ function getAIResponse(userMessage, mood, messageCount) {
     return shortReplies[Math.floor(Math.random() * shortReplies.length)];
   }
 
-  // 通用回复（也尝试流派增强）
+  // 通用回复（也尝试流派+文章增强）
   const generalBase = generalResponses[Math.floor(Math.random() * generalResponses.length)];
   const schoolMatch = matchSchool(userMessage);
+  
+  // 优先尝试文章增强
+  if (articleMatch && Math.random() < 0.3) {
+    const articleEnhancement = getArticleEnhancement(articleMatch);
+    if (articleEnhancement) {
+      return generalBase + '\n\n' + articleEnhancement;
+    }
+  }
+  
+  // 其次尝试流派增强
   if (schoolMatch && Math.random() < 0.3) {
     const insight = getSchoolInsight(schoolMatch.school);
     if (insight) {

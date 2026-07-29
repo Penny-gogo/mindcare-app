@@ -1,44 +1,80 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import * as appointmentsApi from '../api/appointments';
 
 const AppointmentContext = createContext(null);
 
 export function AppointmentProvider({ children }) {
-  const [appointments, setAppointments] = useState(() => {
-    const saved = localStorage.getItem('mindcare_appointments');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const addAppointment = (appointment) => {
-    const newAppointment = {
-      id: Date.now(),
-      ...appointment,
-      status: 'upcoming',
-      createdAt: new Date().toISOString()
+  // 初始化加载预约数据
+  useEffect(() => {
+    const loadAppointments = async () => {
+      try {
+        const data = await appointmentsApi.getAllAppointments();
+        setAppointments(data);
+      } catch (error) {
+        console.error('加载预约数据失败:', error);
+        // 回退到 localStorage
+        const saved = localStorage.getItem('mindcare_appointments');
+        setAppointments(saved ? JSON.parse(saved) : []);
+      }
+      setLoading(false);
     };
-    const updated = [...appointments, newAppointment];
-    setAppointments(updated);
-    localStorage.setItem('mindcare_appointments', JSON.stringify(updated));
-    return newAppointment;
+    loadAppointments();
+  }, []);
+
+  const addAppointment = async (appointment) => {
+    try {
+      const newAppointment = await appointmentsApi.addAppointment(appointment);
+      setAppointments(prev => [...prev, newAppointment]);
+      return newAppointment;
+    } catch (error) {
+      console.error('添加预约失败:', error);
+      // localStorage 回退
+      const newAppointment = {
+        id: Date.now(),
+        ...appointment,
+        status: 'upcoming',
+        createdAt: new Date().toISOString(),
+      };
+      const updated = [...appointments, newAppointment];
+      setAppointments(updated);
+      localStorage.setItem('mindcare_appointments', JSON.stringify(updated));
+      return newAppointment;
+    }
   };
 
-  const cancelAppointment = (id) => {
-    const updated = appointments.map(apt =>
-      apt.id === id ? { ...apt, status: 'cancelled' } : apt
-    );
-    setAppointments(updated);
-    localStorage.setItem('mindcare_appointments', JSON.stringify(updated));
+  const cancelAppointment = async (id) => {
+    try {
+      await appointmentsApi.cancelAppointment(id);
+      setAppointments(prev => prev.map(apt => apt.id === id ? { ...apt, status: 'cancelled' } : apt));
+    } catch (error) {
+      console.error('取消预约失败:', error);
+      setAppointments(prev => {
+        const updated = prev.map(apt => apt.id === id ? { ...apt, status: 'cancelled' } : apt);
+        localStorage.setItem('mindcare_appointments', JSON.stringify(updated));
+        return updated;
+      });
+    }
   };
 
-  const completeAppointment = (id) => {
-    const updated = appointments.map(apt =>
-      apt.id === id ? { ...apt, status: 'completed' } : apt
-    );
-    setAppointments(updated);
-    localStorage.setItem('mindcare_appointments', JSON.stringify(updated));
+  const completeAppointment = async (id) => {
+    try {
+      await appointmentsApi.completeAppointment(id);
+      setAppointments(prev => prev.map(apt => apt.id === id ? { ...apt, status: 'completed' } : apt));
+    } catch (error) {
+      console.error('完成预约失败:', error);
+      setAppointments(prev => {
+        const updated = prev.map(apt => apt.id === id ? { ...apt, status: 'completed' } : apt);
+        localStorage.setItem('mindcare_appointments', JSON.stringify(updated));
+        return updated;
+      });
+    }
   };
 
   return (
-    <AppointmentContext.Provider value={{ appointments, addAppointment, cancelAppointment, completeAppointment }}>
+    <AppointmentContext.Provider value={{ appointments, addAppointment, cancelAppointment, completeAppointment, loading }}>
       {children}
     </AppointmentContext.Provider>
   );

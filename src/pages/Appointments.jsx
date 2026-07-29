@@ -40,14 +40,14 @@ const Appointments = () => {
     return `${month}月${day}日 周${weekDay}`;
   };
 
-  const handleCancel = (id) => {
+  const handleCancel = async (id) => {
     if (window.confirm('确定要取消这个预约吗？')) {
-      cancelAppointment(id);
+      await cancelAppointment(id);
     }
   };
 
-  const handleComplete = (id) => {
-    completeAppointment(id);
+  const handleComplete = async (id) => {
+    await completeAppointment(id);
   };
 
   return (

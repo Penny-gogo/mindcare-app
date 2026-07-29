@@ -1726,7 +1726,7 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {showTopics && messages.length <= 2 && (
+      {showTopics && messages.length <= 4 && (
         <div className="quick-topics">
           <p className="topics-label">你可以聊聊：</p>
           <div className="topics-grid">

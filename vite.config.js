@@ -1,9 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// 移除crossorigin属性的插件 - GitHub Pages同源部署不需要CORS
+function removeCrossoriginPlugin() {
+  return {
+    name: 'remove-crossorigin',
+    transformIndexHtml(html) {
+      return html.replace(/\s+crossorigin(?=\s|>)/g, '')
+    }
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), removeCrossoriginPlugin()],
   base: '/mindcare-app/',  // GitHub Pages: 仓库名作为base路径
   server: {
     host: '0.0.0.0',   // DevCloud: 必须绑定0.0.0.0，不能是localhost

@@ -213,6 +213,7 @@
   height: calc(100vh - 64px);
   max-width: 900px;
   margin: 0 auto;
+  position: relative;
 }
 
 .chat-header {
@@ -659,6 +660,211 @@
   cursor: not-allowed;
 }
 
+/* ===== 打字机效果 ===== */
+.msg-bubble.typing-active {
+  position: relative;
+}
+
+.msg-bubble.typing-active::after {
+  content: '▊';
+  animation: blink-cursor 0.8s infinite;
+  color: #4a6cf7;
+  font-size: 14px;
+  margin-left: 1px;
+}
+
+@keyframes blink-cursor {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* ===== Markdown渲染样式 ===== */
+.msg-bubble strong {
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.msg-bubble code {
+  background: #f0f3ff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #4a6cf7;
+}
+
+.msg-paragraph-gap {
+  height: 8px;
+}
+
+.msg-list-bullet {
+  color: #4a6cf7;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.msg-list-number {
+  color: #4a6cf7;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* ===== 消息反馈按钮 ===== */
+.msg-feedback {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.message.ai:hover .msg-feedback,
+.message.ai .msg-feedback {
+  opacity: 1;
+}
+
+.feedback-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0.5;
+  transition: all 0.2s;
+}
+
+.feedback-btn:hover {
+  opacity: 1;
+  background: #f0f3ff;
+  border-color: #e0e0e8;
+}
+
+.feedback-btn.active {
+  opacity: 1;
+  background: #eef1ff;
+  border-color: #4a6cf7;
+}
+
+/* ===== 危机消息样式 ===== */
+.message.crisis .msg-bubble {
+  background: linear-gradient(135deg, #fff5f5, #ffe8e8) !important;
+  border: 1px solid #ffcccc;
+  border-left: 3px solid #ff4444;
+}
+
+/* ===== 滚动到底部按钮 ===== */
+.scroll-bottom-btn {
+  position: absolute;
+  bottom: 140px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 20px;
+  background: white;
+  border: 1px solid #e0e0e8;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #4a6cf7;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+  z-index: 10;
+  animation: fadeInUp 0.3s ease;
+}
+
+.scroll-bottom-btn:hover {
+  background: #f8f9ff;
+  border-color: #4a6cf7;
+  box-shadow: 0 4px 16px rgba(74, 108, 247, 0.2);
+}
+
+@keyframes fadeInUp {
+  from { transform: translateX(-50%) translateY(10px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+/* ===== 智能快捷回复 ===== */
+.quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 20px;
+  background: white;
+  border-top: 1px solid #f0f0f5;
+  flex-shrink: 0;
+  animation: fadeIn 0.3s ease;
+}
+
+.quick-reply-btn {
+  padding: 7px 16px;
+  background: #f8f9ff;
+  border: 1px solid #e8ecff;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #4a6cf7;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.quick-reply-btn:hover {
+  background: #eef1ff;
+  border-color: #4a6cf7;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(74, 108, 247, 0.15);
+}
+
+/* ===== 对话摘要 ===== */
+.session-summary {
+  background: #f8f9ff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 12px 0;
+  text-align: left;
+}
+
+.summary-title {
+  font-size: 13px;
+  color: #555;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.summary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.summary-tag {
+  padding: 3px 10px;
+  background: #eef1ff;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #4a6cf7;
+  font-weight: 500;
+}
+
+.summary-last {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+  font-style: italic;
+}
+
+/* ===== 输入框自适应 ===== */
+.chat-input-area textarea {
+  min-height: 44px;
+  max-height: 120px;
+  overflow-y: auto;
+  line-height: 1.5;
+}
+
+/* ===== 状态栏输入指示 ===== */
+.ch-status.typing-indicator {
+  color: #4a6cf7;
+}
+
 @media (max-width: 768px) {
   .message {
     max-width: 85%;
@@ -688,5 +894,29 @@
   .ch-mood-badge {
     font-size: 11px;
     padding: 3px 8px;
+  }
+
+  .quick-replies {
+    gap: 6px;
+    padding: 8px 12px;
+  }
+
+  .quick-reply-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .scroll-bottom-btn {
+    bottom: 120px;
+    font-size: 12px;
+    padding: 6px 16px;
+  }
+
+  .session-summary {
+    padding: 10px 12px;
+  }
+
+  .msg-feedback {
+    opacity: 1;
   }
 }

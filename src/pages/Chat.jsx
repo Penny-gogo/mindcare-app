@@ -1696,6 +1696,181 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
   return generalBase;
 }
 
+// ===== 打字机效果 =====
+// 使用闭包追踪定时器ID，支持外部取消
+function startTypingAnimation(fullText, setDisplayedText, setTypingMessageId, onComplete, timerRef) {
+  let currentIndex = 0;
+  const totalLen = fullText.length;
+  // 根据文本长度动态调整速度：短文本慢打，长文本快打
+  const baseSpeed = totalLen > 200 ? 8 : totalLen > 100 ? 12 : 18;
+  let timerId = null;
+  
+  const animate = () => {
+    if (currentIndex < totalLen) {
+      // 长文本时每5个字符批量显示，加速体验
+      const step = totalLen > 300 ? 3 : totalLen > 150 ? 2 : 1;
+      currentIndex = Math.min(currentIndex + step, totalLen);
+      setDisplayedText(fullText.slice(0, currentIndex));
+      
+      // 根据当前字符调整速度
+      const currentChar = fullText[currentIndex - 1];
+      let nextDelay = baseSpeed;
+      if (currentChar === '\n') nextDelay = baseSpeed * 3; // 换行暂停
+      else if (currentChar === '。' || currentChar === '！' || currentChar === '？') nextDelay = baseSpeed * 2.5; // 句末暂停
+      else if (currentChar === '，' || currentChar === '、' || currentChar === '；') nextDelay = baseSpeed * 1.5; // 逗号小暂停
+      
+      timerId = setTimeout(animate, nextDelay);
+      if (timerRef) timerRef.current = timerId;
+    } else {
+      setTypingMessageId(null);
+      if (timerRef) timerRef.current = null;
+      if (onComplete) onComplete();
+    }
+  };
+  
+  timerId = setTimeout(animate, 80); // 初始小延迟
+  if (timerRef) timerRef.current = timerId;
+}
+
+// ===== 简易Markdown渲染（安全版） =====
+function renderMarkdown(text) {
+  if (!text) return '';
+  
+  let html = text;
+  
+  // 转义HTML特殊字符防止XSS
+  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
+  // 粗体 **text**
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  
+  // 行内代码 `code`
+  html = html.replace(/`(.+?)`/g, '<code>$1</code>');
+  
+  // 换行处理
+  html = html.replace(/\n\n/g, '\n<div class="msg-paragraph-gap"></div>\n');
+  html = html.replace(/\n/g, '<br/>');
+  
+  // 列表项
+  html = html.replace(/<br\/>\s*[-•]\s*/g, '<br/><span class="msg-list-bullet">•</span> ');
+  html = html.replace(/<br\/>\s*(\d+)\.\s*/g, '<br/><span class="msg-list-number">$1.</span> ');
+  
+  return html;
+}
+
+// ===== 智能快捷回复生成 =====
+function generateQuickReplies(aiMessage, currentTopic, mood) {
+  const replies = [];
+  const msg = aiMessage.toLowerCase();
+  
+  // 基于AI消息中的问题生成回复
+  if (msg.includes('能说说') || msg.includes('告诉我更多') || msg.includes('展开说说')) {
+    replies.push({ text: '让我想想怎么表达...', type: 'bridge' });
+  }
+  if (msg.includes('什么时候开始') || msg.includes('持续多久')) {
+    replies.push({ text: '大概有一段时间了', type: 'time' });
+    replies.push({ text: '最近才开始的', type: 'time' });
+  }
+  if (msg.includes('尝试过') || msg.includes('做过什么')) {
+    replies.push({ text: '试过一些方法', type: 'coping' });
+    replies.push({ text: '还没尝试过', type: 'coping' });
+  }
+  if (msg.includes('最困扰') || msg.includes('最让你')) {
+    replies.push({ text: '最困扰的是情绪方面', type: 'focus' });
+    replies.push({ text: '最困扰的是工作方面', type: 'focus' });
+  }
+  
+  // 基于话题的快捷回复
+  if (currentTopic) {
+    const topicReplies = {
+      work_stress: [
+        { text: '工作量太大了', type: 'detail' },
+        { text: '和领导关系紧张', type: 'detail' },
+        { text: '对未来很迷茫', type: 'detail' }
+      ],
+      emotion: [
+        { text: '情绪波动很大', type: 'detail' },
+        { text: '总是感到焦虑', type: 'detail' },
+        { text: '提不起精神', type: 'detail' }
+      ],
+      sleep: [
+        { text: '入睡困难', type: 'detail' },
+        { text: '半夜经常醒', type: 'detail' },
+        { text: '早上醒太早', type: 'detail' }
+      ],
+      relationship: [
+        { text: '沟通总是吵架', type: 'detail' },
+        { text: '感觉不被理解', type: 'detail' },
+        { text: '不知道该不该继续', type: 'detail' }
+      ],
+      self_worth: [
+        { text: '总觉得自己不够好', type: 'detail' },
+        { text: '害怕被评价', type: 'detail' },
+        { text: '追求完美到很累', type: 'detail' }
+      ]
+    };
+    
+    if (topicReplies[currentTopic]) {
+      const available = topicReplies[currentTopic].filter(r => !replies.some(er => er.type === r.type));
+      replies.push(...available.slice(0, 2));
+    }
+  }
+  
+  // 通用快捷回复（始终提供）
+  const generalReplies = [
+    { text: '我想聊聊别的', type: 'switch' },
+    { text: '给我一个小建议', type: 'tip' },
+    { text: '谢谢，我感觉好些了', type: 'positive' }
+  ];
+  
+  // 如果已有3个以上特定回复，只加1个通用回复
+  if (replies.length >= 3) {
+    replies.push(generalReplies[Math.floor(Math.random() * generalReplies.length)]);
+  } else {
+    replies.push(...generalReplies.slice(0, 2));
+  }
+  
+  return replies.slice(0, 4); // 最多显示4个
+}
+
+// ===== 对话摘要生成 =====
+function generateSessionSummary(messages) {
+  if (!messages || messages.length === 0) return null;
+  
+  const userMsgs = messages.filter(m => m.sender === 'user');
+  if (userMsgs.length === 0) return null;
+  
+  // 提取关键话题
+  const allText = userMsgs.map(m => m.text).join(' ').toLowerCase();
+  const topics = [];
+  
+  const topicKeywords = {
+    '工作压力': ['工作', '加班', '压力', '忙', 'deadline', '996'],
+    '焦虑': ['焦虑', '不安', '担心', '紧张', '害怕'],
+    '情绪低落': ['低落', '难过', '沮丧', '不开心', '想哭'],
+    '睡眠问题': ['失眠', '睡不着', '早醒', '睡眠'],
+    '人际关系': ['同事', '领导', '关系', '冲突', '沟通'],
+    '职业倦怠': ['倦怠', '没动力', '迷茫', '想辞职'],
+    '自我价值': ['不够好', '自卑', '不配', '完美主义'],
+  };
+  
+  for (const [topic, keywords] of Object.entries(topicKeywords)) {
+    if (keywords.some(kw => allText.includes(kw))) {
+      topics.push(topic);
+    }
+  }
+  
+  // 提取用户情绪
+  const moodEmojis = messages.filter(m => m.sender === 'user').slice(0, 1);
+  
+  return {
+    messageCount: userMsgs.length,
+    topics: topics.slice(0, 3),
+    lastMessage: userMsgs[userMsgs.length - 1]?.text?.slice(0, 30) + (userMsgs[userMsgs.length - 1]?.text?.length > 30 ? '...' : ''),
+    firstMood: messages[0]?.text?.match(/[😊😌😔😰😤😴]/)?.[0] || null
+  };
+}
+
 function formatTime(date) {
   return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 }
@@ -1715,6 +1890,24 @@ export default function Chat() {
   const [showTopics, setShowTopics] = useState(!hasSavedSession);
   const [tipCount, setTipCount] = useState(0);
   const messagesEndRef = useRef(null);
+  const chatMessagesRef = useRef(null);
+
+  // ===== 打字机效果状态 =====
+  const [typingMessageId, setTypingMessageId] = useState(null);
+  const [displayedText, setDisplayedText] = useState('');
+  const typingTimerRef = useRef(null);
+
+  // ===== 智能快捷回复状态 =====
+  const [quickReplies, setQuickReplies] = useState([]);
+
+  // ===== 消息反馈状态 =====
+  const [messageFeedback, setMessageFeedback] = useState({});
+
+  // ===== 滚动到底部按钮状态 =====
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+
+  // ===== 输入框自适应 =====
+  const textareaRef = useRef(null);
   
   // ===== 深度对话系统状态 =====
   const [conversationPhase, setConversationPhase] = useState(
@@ -1858,6 +2051,7 @@ export default function Chat() {
     setInput('');
     setIsTyping(true);
     setShowTopics(false);
+    setQuickReplies([]); // 清除快捷回复
 
     // ===== 更新对话状态 =====
     const newPhase = determineConversationPhase(newMessages.length, newMessages, conversationPhase);
@@ -1872,7 +2066,7 @@ export default function Chat() {
       if (detectedTopic) setCurrentTopic(detectedTopic);
     }
 
-    // 模拟AI回复（带对话状态）
+    // 模拟AI回复（带对话状态 + 打字机效果）
     const delay = 800 + Math.random() * 1500;
     setTimeout(() => {
       try {
@@ -1882,13 +2076,34 @@ export default function Chat() {
           memory: updatedMemory
         };
         const aiText = getAIResponse(text, mood, newMessages.length, newMessages, conversationState);
+        const aiMsgId = Date.now() + 1;
         const aiMsg = {
-          id: Date.now() + 1,
+          id: aiMsgId,
           sender: 'ai',
           text: aiText || '我听到了你说的话，能再多告诉我一些吗？',
-          time: formatTime(new Date())
+          time: formatTime(new Date()),
+          isTyping: true // 标记正在打字
         };
         setMessages(prev => [...prev, aiMsg]);
+        
+        // 启动打字机动画
+        setTypingMessageId(aiMsgId);
+        setDisplayedText('');
+        startTypingAnimation(
+          aiMsg.text,
+          setDisplayedText,
+          setTypingMessageId,
+          () => {
+            // 打字完成，更新消息状态并生成快捷回复
+            setMessages(prev => prev.map(m => 
+              m.id === aiMsgId ? { ...m, isTyping: false } : m
+            ));
+            // 生成智能快捷回复
+            const replies = generateQuickReplies(aiMsg.text, topicResult.newTopic || currentTopic, mood);
+            setQuickReplies(replies);
+          },
+          typingTimerRef
+        );
       } catch (e) {
         // 如果AI回复生成出错，给出智能兜底回复
         console.error('AI回复生成错误:', e);
@@ -1905,6 +2120,7 @@ export default function Chat() {
           time: formatTime(new Date())
         };
         setMessages(prev => [...prev, fallbackMsg]);
+        setQuickReplies([{ text: '让我想想...', type: 'bridge' }, { text: '谢谢', type: 'positive' }]);
       }
       setIsTyping(false);
 
@@ -1934,6 +2150,80 @@ export default function Chat() {
     }
   };
 
+  // ===== 快捷回复点击处理 =====
+  const handleQuickReply = (replyText) => {
+    setQuickReplies([]);
+    handleSend(replyText);
+  };
+
+  // ===== 消息反馈处理 =====
+  const handleFeedback = (messageId, feedbackType) => {
+    setMessageFeedback(prev => ({ ...prev, [messageId]: feedbackType }));
+    // 如果反馈为负面，给出改进回应
+    if (feedbackType === 'negative') {
+      const improveReplies = [
+        '谢谢你的反馈，我会继续努力。能告诉我哪方面可以改进吗？',
+        '抱歉没有帮到你。你更希望我怎么回应呢？',
+        '我理解，有时候我的回答可能不够贴切。你想聊点别的吗？'
+      ];
+      setTimeout(() => {
+        const aiMsg = {
+          id: Date.now(),
+          sender: 'ai',
+          text: improveReplies[Math.floor(Math.random() * improveReplies.length)],
+          time: formatTime(new Date())
+        };
+        setMessages(prev => [...prev, aiMsg]);
+      }, 800);
+    } else if (feedbackType === 'positive') {
+      // 正面反馈：温暖回应
+      const positiveReplies = [
+        '谢谢你的肯定 💚 你的反馈让我更有动力了。',
+        '很高兴能帮到你！如果还有其他想聊的，随时告诉我。'
+      ];
+      setTimeout(() => {
+        const aiMsg = {
+          id: Date.now(),
+          sender: 'ai',
+          text: positiveReplies[Math.floor(Math.random() * positiveReplies.length)],
+          time: formatTime(new Date())
+        };
+        setMessages(prev => [...prev, aiMsg]);
+      }, 800);
+    }
+  };
+
+  // ===== 滚动检测 =====
+  const handleScroll = () => {
+    if (!chatMessagesRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatMessagesRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setShowScrollBottom(!isNearBottom);
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // ===== 输入框自适应高度 =====
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    // 自适应高度
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+    }
+  };
+
+  // ===== 清理打字机定时器 =====
+  useEffect(() => {
+    return () => {
+      if (typingTimerRef.current) {
+        clearTimeout(typingTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleReset = () => {
     clearChatSession();
     setMood(null);
@@ -1943,6 +2233,12 @@ export default function Chat() {
     // 重置对话状态
     setConversationPhase(CONVERSATION_PHASES.GREETING);
     setCurrentTopic(null);
+    // 重置新增状态
+    setQuickReplies([]);
+    setMessageFeedback({});
+    setTypingMessageId(null);
+    setDisplayedText('');
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
   };
 
   // 欢迎回来界面（有保存的对话时显示）
@@ -1952,6 +2248,7 @@ export default function Chat() {
       ? `上次聊天：${lastTime.toLocaleDateString('zh-CN')} ${lastTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
       : '';
     const msgCount = savedSession.messages ? savedSession.messages.filter(m => m.sender === 'user').length : 0;
+    const summary = generateSessionSummary(savedSession.messages);
     
     return (
       <div className="chat-mood-page">
@@ -1961,6 +2258,22 @@ export default function Chat() {
           <p className="welcome-back-subtitle">我还在这里等你 🤗</p>
           {timeStr && <p className="welcome-back-time">{timeStr}</p>}
           {msgCount > 0 && <p className="welcome-back-info">上次我们聊了{msgCount}轮，有{savedSession.mood ? `${savedSession.mood.emoji} ${savedSession.mood.label}` : ''}的心情</p>}
+          
+          {/* 对话摘要 */}
+          {summary && summary.topics.length > 0 && (
+            <div className="session-summary">
+              <p className="summary-title">📋 上次聊到</p>
+              <div className="summary-tags">
+                {summary.topics.map((topic, i) => (
+                  <span key={i} className="summary-tag">{topic}</span>
+                ))}
+              </div>
+              {summary.lastMessage && (
+                <p className="summary-last">「{summary.lastMessage}」</p>
+              )}
+            </div>
+          )}
+          
           <div className="mood-divider"></div>
           <div className="welcome-back-actions">
             <button className="btn-continue" onClick={handleContinueChat}>
@@ -2016,7 +2329,7 @@ export default function Chat() {
             <h3>{aiName}</h3>
             <span className="ch-status">
               <span className="status-dot"></span>
-              在线 · 随时倾听
+              {typingMessageId ? `${aiName}正在输入...` : '在线 · 随时倾听'}
             </span>
           </div>
         </div>
@@ -2031,18 +2344,50 @@ export default function Chat() {
         </div>
       </div>
 
-      <div className="chat-messages">
-        {messages.map(msg => (
-          <div key={msg.id} className={`message ${msg.sender}`}>
-            {msg.sender === 'ai' && (
-              <span className="msg-ai-avatar">{AI_AVATAR}</span>
-            )}
-            <div className="msg-content">
-              <div className="msg-bubble">{msg.text}</div>
-              <span className="msg-time">{msg.time}</span>
+      <div className="chat-messages" ref={chatMessagesRef} onScroll={handleScroll}>
+        {messages.map(msg => {
+          // 打字机效果：正在打字的消息显示逐字内容
+          const isCurrentlyTyping = msg.id === typingMessageId;
+          const displayText = isCurrentlyTyping ? displayedText : msg.text;
+          
+          // 消息类型检测
+          const isCrisisMsg = msg.sender === 'ai' && msg.text && crisisKeywords.some(kw => msg.text.includes(kw));
+          const isTipMsg = msg.sender === 'tip';
+          
+          return (
+            <div key={msg.id} className={`message ${msg.sender} ${isCrisisMsg ? 'crisis' : ''} ${isTipMsg ? 'tip' : ''}`}>
+              {msg.sender === 'ai' && (
+                <span className="msg-ai-avatar">{AI_AVATAR}</span>
+              )}
+              <div className="msg-content">
+                <div 
+                  className={`msg-bubble ${isCurrentlyTyping ? 'typing-active' : ''}`}
+                  dangerouslySetInnerHTML={{ __html: renderMarkdown(displayText || '') }}
+                />
+                {!isCurrentlyTyping && <span className="msg-time">{msg.time}</span>}
+                {/* 消息反馈按钮（仅AI消息，打字完成后显示） */}
+                {msg.sender === 'ai' && !isCurrentlyTyping && !isTipMsg && (
+                  <div className="msg-feedback">
+                    <button 
+                      className={`feedback-btn ${messageFeedback[msg.id] === 'positive' ? 'active' : ''}`}
+                      onClick={() => handleFeedback(msg.id, 'positive')}
+                      title="有帮助"
+                    >
+                      👍
+                    </button>
+                    <button 
+                      className={`feedback-btn ${messageFeedback[msg.id] === 'negative' ? 'active' : ''}`}
+                      onClick={() => handleFeedback(msg.id, 'negative')}
+                      title="没帮助"
+                    >
+                      👎
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {isTyping && (
           <div className="message ai">
             <span className="msg-ai-avatar">{AI_AVATAR}</span>
@@ -2056,7 +2401,29 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {showTopics && messages.length <= 4 && (
+      {/* 滚动到底部按钮 */}
+      {showScrollBottom && (
+        <button className="scroll-bottom-btn" onClick={scrollToBottom}>
+          ↓ 最新消息
+        </button>
+      )}
+
+      {/* 智能快捷回复 */}
+      {quickReplies.length > 0 && !typingMessageId && (
+        <div className="quick-replies">
+          {quickReplies.map((reply, i) => (
+            <button 
+              key={i} 
+              className="quick-reply-btn"
+              onClick={() => handleQuickReply(reply.text)}
+            >
+              {reply.text}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {showTopics && messages.length <= 4 && quickReplies.length === 0 && (
         <div className="quick-topics">
           <p className="topics-label">你可以聊聊：</p>
           <div className="topics-grid">
@@ -2076,8 +2443,9 @@ export default function Chat() {
 
       <div className="chat-input-area">
         <textarea
+          ref={textareaRef}
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="说说你的感受..."
           rows={1}

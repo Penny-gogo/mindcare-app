@@ -1,0 +1,221 @@
+{
+  "meta": {
+    "version": "1.0",
+    "created": "2026-07-30",
+    "description": "MindCare小暖知识库更新追踪器，记录各模块更新状态与计划",
+    "purpose": "确保知识库持续为小暖对话提供专业支撑，避免内容老化"
+  },
+  "updatePolicy": {
+    "coreModules": {
+      "frequency": "biweekly",
+      "reason": "核心模块（EAP/CBT/MBSR等）理论稳定，但案例和话术需定期优化"
+    },
+    "therapyModules": {
+      "frequency": "monthly",
+      "reason": "疗法模块需跟进最新循证研究"
+    },
+    "platformModules": {
+      "frequency": "weekly",
+      "reason": "平台洞察和文章采集需高频更新"
+    },
+    "referenceModules": {
+      "frequency": "monthly",
+      "reason": "名言/App评测等参考内容定期补充"
+    },
+    "academicModules": {
+      "frequency": "quarterly",
+      "reason": "学术资源按学期/季度更新"
+    }
+  },
+  "modules": {
+    "knowledgeBase": {
+      "file": "src/data/knowledgeBase.js",
+      "name": "核心知识库（EAP/CBT/MBSR/职场/危机干预等）",
+      "type": "core",
+      "lastContentUpdate": "2026-07-25",
+      "lastChecked": "2026-07-30",
+      "updateFrequency": "biweekly",
+      "priority": "high",
+      "staleDays": 14,
+      "status": "fresh",
+      "subModules": [
+        {
+          "key": "eap",
+          "name": "EAP行业标准",
+          "lastUpdate": "2026-07-25"
+        },
+        {
+          "key": "crisisIntervention",
+          "name": "心理危机干预",
+          "lastUpdate": "2026-07-25"
+        },
+        {
+          "key": "cbt",
+          "name": "CBT认知行为疗法",
+          "lastUpdate": "2026-07-25"
+        },
+        {
+          "key": "mindfulness",
+          "name": "正念减压MBSR",
+          "lastUpdate": "2026-07-25"
+        },
+        {
+          "key": "workplaceMentalHealth",
+          "name": "职场心理健康",
+          "lastUpdate": "2026-07-25"
+        },
+        {
+          "key": "warmResponseTemplates",
+          "name": "温暖话术模板",
+          "lastUpdate": "2026-07-25"
+        },
+        {
+          "key": "selfHelpToolkit",
+          "name": "自助技巧体系",
+          "lastUpdate": "2026-07-25"
+        },
+        {
+          "key": "academicResources",
+          "name": "高校学术资源",
+          "lastUpdate": "2026-07-25"
+        }
+      ],
+      "nextPlan": "补充职场倦怠最新研究（2026年）、更新EAP国内政策变化"
+    },
+    "psychologySchools": {
+      "file": "src/data/knowledge/psychologySchools.js",
+      "name": "主流心理学技术流派",
+      "type": "therapy",
+      "lastContentUpdate": "2026-07-29",
+      "lastChecked": "2026-07-30",
+      "updateFrequency": "monthly",
+      "priority": "medium",
+      "staleDays": 30,
+      "status": "fresh",
+      "nextPlan": "补充ACT接纳承诺疗法详细内容、更新EMDR最新适应症"
+    },
+    "psychologistQuotes": {
+      "file": "src/data/knowledge/psychologistQuotes.js",
+      "name": "心理学家名人名言",
+      "type": "reference",
+      "lastContentUpdate": "2026-07-29",
+      "lastChecked": "2026-07-30",
+      "updateFrequency": "monthly",
+      "priority": "medium",
+      "staleDays": 30,
+      "status": "fresh",
+      "nextPlan": "补充中国心理学家名言（张厚粲、林崇德等）"
+    },
+    "mentalHealthApps": {
+      "file": "src/data/knowledge/mentalHealthApps.js",
+      "name": "主流心理App评测",
+      "type": "reference",
+      "lastContentUpdate": "2026-07-25",
+      "lastChecked": "2026-07-30",
+      "updateFrequency": "monthly",
+      "priority": "low",
+      "staleDays": 30,
+      "status": "fresh",
+      "nextPlan": "更新各App最新版本功能变化、补充新兴AI心理陪伴App"
+    },
+    "academicExpansion": {
+      "file": "src/data/knowledge/academicExpansion.js",
+      "name": "高校学术资源扩展",
+      "type": "academic",
+      "lastContentUpdate": "2026-07-25",
+      "lastChecked": "2026-07-30",
+      "updateFrequency": "quarterly",
+      "priority": "low",
+      "staleDays": 90,
+      "status": "fresh",
+      "nextPlan": "补充中山大学、南京大学心理中心资源"
+    },
+    "articleCollection": {
+      "file": "src/data/knowledge/articleCollection.js",
+      "name": "网络心理文章采集框架",
+      "type": "platform",
+      "lastContentUpdate": "2026-07-25",
+      "lastChecked": "2026-07-30",
+      "updateFrequency": "weekly",
+      "priority": "high",
+      "staleDays": 7,
+      "status": "aging",
+      "articleCount": 8,
+      "nextPlan": "新增2-3篇：情绪管理主题(焦虑自助)、职场主题(远程办公心理)、亲密关系主题(依恋类型)"
+    }
+  },
+  "updateLog": [
+    {
+      "date": "2026-07-30",
+      "action": "created_tracker",
+      "description": "创建知识库更新追踪器，建立更新机制基线"
+    },
+    {
+      "date": "2026-07-30",
+      "action": "auto_check",
+      "description": "自动检查：0个模块过期"
+    }
+  ],
+  "collectionBacklog": {
+    "highPriority": [
+      {
+        "topic": "焦虑自助实用指南",
+        "source": "KnowYourself/壹心理",
+        "targetModule": "articleCollection",
+        "status": "planned"
+      },
+      {
+        "topic": "远程办公心理健康",
+        "source": "职场心理研究",
+        "targetModule": "articleCollection",
+        "status": "planned"
+      },
+      {
+        "topic": "依恋类型与亲密关系",
+        "source": "简单心理/书籍",
+        "targetModule": "articleCollection",
+        "status": "planned"
+      },
+      {
+        "topic": "职场倦怠2026最新研究",
+        "source": "学术期刊",
+        "targetModule": "knowledgeBase.workplaceMentalHealth",
+        "status": "planned"
+      }
+    ],
+    "mediumPriority": [
+      {
+        "topic": "ACT接纳承诺疗法详解",
+        "source": "APA/学术资源",
+        "targetModule": "psychologySchools",
+        "status": "planned"
+      },
+      {
+        "topic": "中国心理学家名言补充",
+        "source": "中国心理学会",
+        "targetModule": "psychologistQuotes",
+        "status": "planned"
+      },
+      {
+        "topic": "AI心理陪伴App评测",
+        "source": "App Store/体验",
+        "targetModule": "mentalHealthApps",
+        "status": "planned"
+      }
+    ],
+    "lowPriority": [
+      {
+        "topic": "中山大学心理中心资源",
+        "source": "高校官网",
+        "targetModule": "academicExpansion",
+        "status": "planned"
+      },
+      {
+        "topic": "正念饮食专题",
+        "source": "MBSR研究",
+        "targetModule": "articleCollection",
+        "status": "planned"
+      }
+    ]
+  }
+}

@@ -1,4 +1,5 @@
 // MindCare EAP知识库 - 模块十四：主流心理App评测
+// lastUpdated: 2026-07-25
 // 来源：App Store/Google Play数据、各平台公开信息、用户体验研究
 // 价值：为MindCare功能设计提供竞品参考和差异化定位
 

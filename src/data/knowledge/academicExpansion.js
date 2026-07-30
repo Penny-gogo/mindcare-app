@@ -1,4 +1,5 @@
 // MindCare EAP知识库 - 高校学术资源扩展
+// lastUpdated: 2026-07-25
 // 新增：清华大学、复旦大学、浙江大学、武汉大学、华南师大、华中师大
 // 与knowledgeBase.js中的academicResources（华东师大/北师大/北大）互补
 

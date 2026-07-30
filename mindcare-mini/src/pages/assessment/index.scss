@@ -1,0 +1,370 @@
+/* MindCare 测评页样式 - 小程序版 */
+
+.assessment-page {
+  min-height: 100vh;
+  background: #f5f7fa;
+  padding-bottom: 120rpx;
+}
+
+.assessment-header {
+  padding: 48rpx 32rpx 32rpx;
+  text-align: center;
+  background: linear-gradient(135deg, #f8f9ff, #eef1ff);
+}
+
+.assessment-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #1a1a2e;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.assessment-subtitle {
+  font-size: 26rpx;
+  color: #888;
+  display: block;
+}
+
+.assessment-list {
+  padding: 24rpx 32rpx;
+  height: calc(100vh - 300rpx);
+}
+
+.assessment-card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.ac-icon {
+  font-size: 56rpx;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.ac-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1a1a2e;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.ac-subtitle {
+  font-size: 24rpx;
+  color: #4a6cf7;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.ac-desc {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.6;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.ac-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ac-type-badge {
+  font-size: 22rpx;
+  color: #4a6cf7;
+  background: rgba(74, 108, 247, 0.1);
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+}
+
+.ac-start {
+  font-size: 26rpx;
+  color: #4a6cf7;
+  font-weight: 500;
+}
+
+.assessment-notice {
+  padding: 24rpx 32rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* Active Assessment */
+.assessment-active {
+  padding: 24rpx 32rpx;
+}
+
+.back-btn {
+  font-size: 28rpx;
+  color: #4a6cf7;
+  margin-bottom: 24rpx;
+  display: block;
+}
+
+/* Keyword Assessment */
+.keyword-assessment {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 40rpx 32rpx;
+  text-align: center;
+}
+
+.ka-icon {
+  font-size: 64rpx;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.ka-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1a1a2e;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.ka-desc {
+  font-size: 26rpx;
+  color: #666;
+  display: block;
+  margin-bottom: 32rpx;
+}
+
+.ka-input {
+  width: 100%;
+  height: 200rpx;
+  padding: 20rpx;
+  border: 2rpx solid #e0e0f0;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  box-sizing: border-box;
+  margin-bottom: 16rpx;
+}
+
+.ka-hint {
+  font-size: 22rpx;
+  color: #999;
+  display: block;
+  margin-bottom: 24rpx;
+}
+
+.ka-submit {
+  padding: 20rpx 48rpx;
+  border-radius: 40rpx;
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 32rpx;
+}
+
+.ka-examples {
+  text-align: left;
+  padding-top: 24rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.ka-examples-title {
+  font-size: 24rpx;
+  color: #888;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.ka-example-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.ka-example-tag {
+  padding: 8rpx 20rpx;
+  background: #f5f7fa;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: #4a6cf7;
+}
+
+/* Quiz */
+.quiz-progress {
+  height: 8rpx;
+  background: #f0f0f0;
+  border-radius: 4rpx;
+  margin-bottom: 16rpx;
+  overflow: hidden;
+}
+
+.quiz-progress-bar {
+  height: 100%;
+  border-radius: 4rpx;
+  transition: width 0.3s;
+}
+
+.quiz-step {
+  font-size: 24rpx;
+  color: #999;
+  display: block;
+  margin-bottom: 24rpx;
+}
+
+.quiz-question {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1a1a2e;
+  display: block;
+  margin-bottom: 32rpx;
+  line-height: 1.5;
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.quiz-option {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  border: 2rpx solid #f0f0f0;
+}
+
+.quiz-option.selected {
+  border-color: #4a6cf7;
+  background: #f8f9ff;
+}
+
+.image-option {
+  text-align: center;
+}
+
+.io-emoji {
+  font-size: 48rpx;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.io-label {
+  font-size: 28rpx;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 4rpx;
+}
+
+.io-desc {
+  font-size: 24rpx;
+  color: #888;
+  display: block;
+}
+
+.choice-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.co-text {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.co-label {
+  font-size: 22rpx;
+  color: #4a6cf7;
+  background: rgba(74, 108, 247, 0.1);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.quiz-option-btn {
+  padding: 28rpx 32rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+/* Result */
+.result-card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 40rpx 32rpx;
+  text-align: center;
+}
+
+.result-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1a1a2e;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.result-desc {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.7;
+  display: block;
+  margin-bottom: 32rpx;
+}
+
+.result-suggestions {
+  text-align: left;
+  padding: 24rpx;
+  background: #f8f9ff;
+  border-radius: 16rpx;
+  margin-bottom: 32rpx;
+}
+
+.suggestions-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1a1a2e;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.suggestion-item {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
+}
+
+.suggestion-bullet {
+  color: #4a6cf7;
+  font-size: 28rpx;
+}
+
+.suggestion-text {
+  font-size: 26rpx;
+  color: #555;
+  line-height: 1.6;
+  flex: 1;
+}
+
+.result-actions {
+  display: flex;
+  gap: 20rpx;
+  justify-content: center;
+}
+
+.result-actions .btn-primary {
+  padding: 16rpx 40rpx;
+  background: linear-gradient(135deg, #4a6cf7, #6c5ce7);
+  color: #fff;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+}
+
+.result-actions .btn-secondary {
+  padding: 16rpx 40rpx;
+  background: #fff;
+  color: #4a6cf7;
+  border: 2rpx solid #4a6cf7;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+}

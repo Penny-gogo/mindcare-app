@@ -1,0 +1,397 @@
+/* MindCare 首页样式 - 小程序版 */
+
+.home {
+  padding-bottom: 40rpx;
+}
+
+/* Hero Section */
+.hero {
+  padding: 60rpx 32rpx;
+  background: linear-gradient(135deg, #f8f9ff 0%, #eef1ff 50%, #f0f0ff 100%);
+  position: relative;
+}
+
+.hero-content {
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.hero-title {
+  font-size: 52rpx;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1a1a2e;
+  margin-bottom: 24rpx;
+  display: block;
+}
+
+.hero-desc {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.8;
+  margin-bottom: 20rpx;
+  display: block;
+}
+
+.hero-highlight {
+  font-size: 28rpx;
+  color: #4a6cf7;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 32rpx;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 20rpx;
+  justify-content: center;
+  margin-bottom: 48rpx;
+}
+
+.hero-actions .btn-primary,
+.hero-actions .btn-secondary {
+  padding: 20rpx 48rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.hero-actions .btn-primary {
+  background: linear-gradient(135deg, #4a6cf7, #6c5ce7);
+  color: #fff;
+}
+
+.hero-actions .btn-secondary {
+  background: #fff;
+  color: #4a6cf7;
+  border: 2rpx solid #4a6cf7;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 40rpx;
+  justify-content: center;
+  margin-bottom: 32rpx;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-number {
+  display: block;
+  font-size: 48rpx;
+  margin-bottom: 8rpx;
+}
+
+.stat-label {
+  font-size: 22rpx;
+  color: #888;
+}
+
+/* 每日寄语 */
+.daily-quote {
+  margin-top: 32rpx;
+  padding: 24rpx 32rpx;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 20rpx;
+  border: 1rpx solid rgba(74, 108, 247, 0.1);
+  text-align: center;
+}
+
+.quote-icon {
+  font-size: 32rpx;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.quote-text {
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: #555;
+  font-style: italic;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.quote-author {
+  font-size: 22rpx;
+  color: #999;
+  display: block;
+}
+
+/* 浮动卡片（简化，小程序不支持position:fixed动画） */
+.hero-visual {
+  display: none;
+}
+
+.floating-card {
+  display: none;
+}
+
+/* Quote Banner */
+.quote-banner {
+  padding: 48rpx 32rpx;
+  background: linear-gradient(135deg, #4a6cf7, #6c5ce7);
+}
+
+.quote-content {
+  text-align: center;
+  color: #fff;
+}
+
+.quote-mark {
+  font-size: 64rpx;
+  opacity: 0.3;
+  display: block;
+  line-height: 1;
+}
+
+.quote-banner .quote-content Text {
+  font-size: 28rpx;
+  line-height: 1.8;
+  display: block;
+}
+
+.quote-source {
+  font-size: 22rpx;
+  opacity: 0.8;
+  margin-top: 16rpx;
+  display: block;
+}
+
+/* Section Header */
+.section-header {
+  text-align: center;
+  margin-bottom: 48rpx;
+}
+
+.section-title {
+  font-size: 36rpx;
+  color: #1a1a2e;
+  font-weight: 700;
+  margin-bottom: 12rpx;
+  display: block;
+}
+
+.section-subtitle {
+  font-size: 26rpx;
+  color: #888;
+  display: block;
+}
+
+/* Modules Section */
+.modules-section {
+  padding: 80rpx 32rpx;
+  background: #fff;
+}
+
+.modules-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.module-card {
+  background: #f8f9ff;
+  border-radius: 24rpx;
+  padding: 40rpx 32rpx;
+  position: relative;
+  border: 1rpx solid #f0f0f5;
+}
+
+.module-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  margin-bottom: 24rpx;
+}
+
+.chat-icon {
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+}
+
+.assess-icon {
+  background: linear-gradient(135deg, #00b894, #55efc4);
+}
+
+.module-title {
+  font-size: 32rpx;
+  color: #1a1a2e;
+  font-weight: 600;
+  margin-bottom: 12rpx;
+  display: block;
+}
+
+.module-desc {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.7;
+  margin-bottom: 20rpx;
+  display: block;
+}
+
+.module-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.feature-tag {
+  padding: 8rpx 20rpx;
+  background: #fff;
+  border-radius: 12rpx;
+  font-size: 22rpx;
+  color: #4a6cf7;
+  border: 1rpx solid #e0e0f0;
+}
+
+.module-arrow {
+  position: absolute;
+  bottom: 24rpx;
+  right: 24rpx;
+  font-size: 32rpx;
+  color: #4a6cf7;
+}
+
+/* Professional Section */
+.professional-section {
+  padding: 80rpx 32rpx;
+  background: #f8f9ff;
+}
+
+.professional-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.pro-card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 32rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.04);
+}
+
+.pro-icon {
+  font-size: 48rpx;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.pro-title {
+  font-size: 30rpx;
+  color: #1a1a2e;
+  font-weight: 600;
+  margin-bottom: 12rpx;
+  display: block;
+}
+
+.pro-desc {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.7;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.pro-tag {
+  display: inline-block;
+  padding: 6rpx 16rpx;
+  background: rgba(74, 108, 247, 0.1);
+  color: #4a6cf7;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+}
+
+/* Crisis Section */
+.crisis-section {
+  padding: 80rpx 32rpx;
+  background: #fff;
+}
+
+.crisis-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.crisis-card {
+  background: #fff5f5;
+  border-radius: 16rpx;
+  padding: 28rpx;
+  border: 1rpx solid #ffe0e0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.crisis-icon {
+  font-size: 40rpx;
+  margin-bottom: 12rpx;
+}
+
+.crisis-title {
+  font-size: 26rpx;
+  color: #333;
+  margin-bottom: 8rpx;
+  display: block;
+}
+
+.crisis-number {
+  font-size: 32rpx;
+  color: #f44336;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+  display: block;
+}
+
+.crisis-tag {
+  font-size: 22rpx;
+  color: #ff6b6b;
+  background: rgba(244, 67, 54, 0.1);
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+}
+
+.crisis-note {
+  font-size: 24rpx;
+  color: #999;
+  text-align: center;
+  margin-top: 24rpx;
+  line-height: 1.6;
+  display: block;
+}
+
+/* CTA Section */
+.cta-section {
+  padding: 80rpx 32rpx;
+  background: linear-gradient(135deg, #f8f9ff, #eef1ff);
+  text-align: center;
+}
+
+.cta-title {
+  font-size: 36rpx;
+  color: #1a1a2e;
+  font-weight: 700;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.cta-subtitle {
+  font-size: 28rpx;
+  color: #888;
+  margin-bottom: 40rpx;
+  display: block;
+}
+
+.btn-lg {
+  padding: 24rpx 64rpx;
+  font-size: 32rpx;
+}

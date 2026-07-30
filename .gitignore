@@ -20,6 +20,9 @@ Thumbs.db
 # JoyCode
 .joycode/
 
+# SWC plugins (binary)
+.swc/
+
 # Logs
 *.log
 npm-debug.log*

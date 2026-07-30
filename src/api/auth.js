@@ -1,5 +1,5 @@
 // 认证 API - 开发环境走 JSON Server，生产环境走 localStorage
-import { useApi, get, post, put } from './client';
+import { useApi, get, post, put, patch } from './client';
 
 const USERS_KEY = 'eap_users';
 const USER_KEY = 'eap_user';

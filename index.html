@@ -16,38 +16,53 @@
       </div>
     </div>
     <script>
-      // 诊断脚本：在React模块加载前捕获错误
-      window.__mindcareDebug = { errors: [], startTime: Date.now() };
+      // 增强诊断脚本 - 捕获错误并主动测试资源可达性
+      window.__mindcareDebug = { errors: [], startTime: Date.now(), fetchTest: null };
+      var statusEl = document.getElementById('loading-status');
+      
+      function showStatus(msg) { if (statusEl) statusEl.textContent = msg; }
+      function showError(msg) {
+        if (statusEl) statusEl.textContent = msg;
+        var root = document.getElementById('root');
+        if (root) {
+          root.innerHTML = '<div style="padding:40px;text-align:center;font-family:system-ui;max-width:600px;margin:0 auto">'
+            + '<h2 style="color:#e74c3c">加载出错</h2>'
+            + '<p style="color:#666;word-break:break-all;margin:16px 0">' + msg + '</p>'
+            + '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#4a6cf7;color:#fff;border:none;border-radius:6px;cursor:pointer">刷新重试</button>'
+            + '</div>';
+        }
+      }
       
       // 捕获同步错误
       window.onerror = function(msg, url, line, col, error) {
-        window.__mindcareDebug.errors.push({ type: 'sync', msg: String(msg), url: url, line: line, col: col });
-        var el = document.getElementById('loading-status');
-        if (el) el.textContent = '错误: ' + msg + ' (行' + line + ')';
-        var root = document.getElementById('root');
-        if (root && !root.querySelector('[data-react-root]')) {
-          root.innerHTML = '<div style="padding:40px;text-align:center;font-family:system-ui"><h2 style="color:#e74c3c">加载出错</h2><p style="color:#666;word-break:break-all">' + msg + '</p><p style="color:#999;font-size:12px;margin-top:8px">' + url + ':' + line + '</p><button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#4a6cf7;color:#fff;border:none;border-radius:6px;cursor:pointer">刷新</button></div>';
-        }
+        window.__mindcareDebug.errors.push({ type: 'sync', msg: String(msg), url: url, line: line });
+        showError('JS错误: ' + msg + ' (行' + line + ')');
       };
       
       // 捕获未处理的Promise rejection
       window.addEventListener('unhandledrejection', function(e) {
         window.__mindcareDebug.errors.push({ type: 'promise', msg: String(e.reason) });
-        console.error('Unhandled rejection:', e.reason);
       });
       
-      // 捕获模块加载错误
+      // 捕获资源加载错误
       window.addEventListener('error', function(e) {
         if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
-          window.__mindcareDebug.errors.push({ type: 'resource', msg: '资源加载失败: ' + (e.target.src || e.target.href) });
-          var el = document.getElementById('loading-status');
-          if (el) el.textContent = '资源加载失败: ' + (e.target.src || e.target.href);
+          var url = e.target.src || e.target.href;
+          window.__mindcareDebug.errors.push({ type: 'resource', msg: '资源加载失败: ' + url });
+          // 主动测试资源可达性
+          fetch(url, { mode: 'cors' }).then(function(r) {
+            return r.text().then(function(t) {
+              window.__mindcareDebug.fetchTest = { status: r.status, type: r.headers.get('content-type'), size: t.length, ok: r.ok };
+              showError('模块加载失败(但资源可访问) HTTP=' + r.status + ' Type=' + r.headers.get('content-type') + ' Size=' + t.length + ' — 可能是CORS或MIME类型问题');
+            });
+          }).catch(function(err) {
+            window.__mindcareDebug.fetchTest = { error: err.message };
+            showError('模块加载失败(资源也不可访问): ' + err.message);
+          });
         }
       }, true);
       
-      // 标记JS已执行
-      var statusEl = document.getElementById('loading-status');
-      if (statusEl) statusEl.textContent = '正在初始化应用...';
+      showStatus('正在初始化应用...');
     </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>

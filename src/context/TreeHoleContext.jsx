@@ -16,8 +16,14 @@ export function TreeHoleProvider({ children }) {
       } catch (error) {
         console.error('加载树洞数据失败:', error);
         // 回退到 localStorage
-        const saved = localStorage.getItem('eap_treehole_posts');
-        setPosts(saved ? JSON.parse(saved) : []);
+        try {
+          const saved = localStorage.getItem('eap_treehole_posts');
+          setPosts(saved ? JSON.parse(saved) : []);
+        } catch (e) {
+          console.error('解析树洞数据失败:', e);
+          localStorage.removeItem('eap_treehole_posts');
+          setPosts([]);
+        }
       }
       setLoading(false);
     };

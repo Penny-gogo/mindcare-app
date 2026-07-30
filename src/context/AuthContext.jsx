@@ -10,9 +10,14 @@ export function AuthProvider({ children }) {
   // 初始化：从 localStorage 或 API 恢复用户状态
   useEffect(() => {
     const initUser = async () => {
-      const saved = localStorage.getItem('eap_user');
-      if (saved) {
-        setUser(JSON.parse(saved));
+      try {
+        const saved = localStorage.getItem('eap_user');
+        if (saved) {
+          setUser(JSON.parse(saved));
+        }
+      } catch (e) {
+        console.error('恢复用户状态失败:', e);
+        localStorage.removeItem('eap_user');
       }
       setLoading(false);
     };

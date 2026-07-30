@@ -11,10 +11,44 @@
       <div id="loading-fallback" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif;color:#666">
         <div style="font-size:48px;margin-bottom:16px">💚</div>
         <h2 style="color:#1a1a2e;margin-bottom:8px">MindCare</h2>
-        <p>正在加载...</p>
+        <p id="loading-status">正在加载...</p>
         <noscript><p style="color:#e74c3c;margin-top:16px">请启用JavaScript以使用此应用。</p></noscript>
       </div>
     </div>
+    <script>
+      // 诊断脚本：在React模块加载前捕获错误
+      window.__mindcareDebug = { errors: [], startTime: Date.now() };
+      
+      // 捕获同步错误
+      window.onerror = function(msg, url, line, col, error) {
+        window.__mindcareDebug.errors.push({ type: 'sync', msg: String(msg), url: url, line: line, col: col });
+        var el = document.getElementById('loading-status');
+        if (el) el.textContent = '错误: ' + msg + ' (行' + line + ')';
+        var root = document.getElementById('root');
+        if (root && !root.querySelector('[data-react-root]')) {
+          root.innerHTML = '<div style="padding:40px;text-align:center;font-family:system-ui"><h2 style="color:#e74c3c">加载出错</h2><p style="color:#666;word-break:break-all">' + msg + '</p><p style="color:#999;font-size:12px;margin-top:8px">' + url + ':' + line + '</p><button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#4a6cf7;color:#fff;border:none;border-radius:6px;cursor:pointer">刷新</button></div>';
+        }
+      };
+      
+      // 捕获未处理的Promise rejection
+      window.addEventListener('unhandledrejection', function(e) {
+        window.__mindcareDebug.errors.push({ type: 'promise', msg: String(e.reason) });
+        console.error('Unhandled rejection:', e.reason);
+      });
+      
+      // 捕获模块加载错误
+      window.addEventListener('error', function(e) {
+        if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+          window.__mindcareDebug.errors.push({ type: 'resource', msg: '资源加载失败: ' + (e.target.src || e.target.href) });
+          var el = document.getElementById('loading-status');
+          if (el) el.textContent = '资源加载失败: ' + (e.target.src || e.target.href);
+        }
+      }, true);
+      
+      // 标记JS已执行
+      var statusEl = document.getElementById('loading-status');
+      if (statusEl) statusEl.textContent = '正在初始化应用...';
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

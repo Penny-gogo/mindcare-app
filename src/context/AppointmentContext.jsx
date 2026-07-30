@@ -16,8 +16,14 @@ export function AppointmentProvider({ children }) {
       } catch (error) {
         console.error('加载预约数据失败:', error);
         // 回退到 localStorage
-        const saved = localStorage.getItem('mindcare_appointments');
-        setAppointments(saved ? JSON.parse(saved) : []);
+        try {
+          const saved = localStorage.getItem('mindcare_appointments');
+          setAppointments(saved ? JSON.parse(saved) : []);
+        } catch (e) {
+          console.error('解析预约数据失败:', e);
+          localStorage.removeItem('mindcare_appointments');
+          setAppointments([]);
+        }
       }
       setLoading(false);
     };

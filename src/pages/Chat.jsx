@@ -5,8 +5,9 @@ import knowledgeBase from '../data/knowledge/index';
 import psychologySchools from '../data/knowledge/psychologySchools';
 import psychologistQuotes from '../data/knowledge/psychologistQuotes';
 import articleCollectionData from '../data/knowledge/articleCollection';
-const articleCollection = articleCollectionData;
 import './Chat.css';
+
+const articleCollection = articleCollectionData;
 
 const DEFAULT_AI_NAME = '小暖';
 const AI_AVATAR = '🤗';

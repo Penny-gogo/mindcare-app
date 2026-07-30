@@ -1,20 +1,37 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// 移除crossorigin属性的插件 - GitHub Pages同源部署不需要CORS
-function removeCrossoriginPlugin() {
+// 修复GitHub Pages部署的HTML插件
+function fixGithubPagesPlugin() {
   return {
-    name: 'remove-crossorigin',
+    name: 'fix-github-pages',
     transformIndexHtml(html) {
-      return html.replace(/\s+crossorigin(?=\s|>)/g, '')
+      // 1. 移除crossorigin属性（同源部署不需要CORS）
+      html = html.replace(/\s+crossorigin(?=\s|>)/g, '')
+      // 2. 将 type="module" 改为 defer script（IIFE格式不需要module，defer确保DOM就绪）
+      html = html.replace(/<script(\s+)type="module"(\s+)src=/g, '<script defer$1src=')
+      return html
     }
   }
 }
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), removeCrossoriginPlugin()],
+  plugins: [react(), fixGithubPagesPlugin()],
   base: '/mindcare-app/',  // GitHub Pages: 仓库名作为base路径
+  build: {
+    rollupOptions: {
+      output: {
+        // 使用IIFE格式替代ES模块，绕过GitHub Pages的模块加载限制
+        // IIFE作为经典<script>加载，不需要CORS检查和JavaScript MIME类型
+        format: 'iife',
+        name: 'MindCareApp',
+        entryFileNames: 'assets/index.js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name].[ext]',
+      }
+    }
+  },
   server: {
     host: '0.0.0.0',   // DevCloud: 必须绑定0.0.0.0，不能是localhost
     port: 8080,         // DevCloud: 只暴露8080端口

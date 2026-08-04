@@ -37,5 +37,16 @@ export default defineConfig({
     port: 8080,         // DevCloud: 只暴露8080端口
     open: false,        // DevCloud: 无浏览器，不能自动打开
     allowedHosts: true,  // Vite 5+: 允许DevCloud域名的Host请求
+    // DeepSeek API代理 - 开发环境避免CORS，生产环境需云函数中转
+    proxy: {
+      '/api/deepseek': {
+        target: 'https://api.deepseek.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/deepseek/, ''),
+        headers: {
+          'Origin': 'https://api.deepseek.com',
+        },
+      },
+    },
   },
 })

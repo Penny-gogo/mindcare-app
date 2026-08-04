@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { streamAIResponse, AI_ENABLED } from '../api/aiService';
+import { retrieveKnowledgeContext } from '../api/knowledgeRetriever';
 import knowledgeBase from '../data/knowledge/index';
 import psychologySchools from '../data/knowledge/psychologySchools';
 import psychologistQuotes from '../data/knowledge/psychologistQuotes';
@@ -1961,6 +1963,7 @@ export default function Chat() {
   const [typingMessageId, setTypingMessageId] = useState(null);
   const [displayedText, setDisplayedText] = useState('');
   const typingTimerRef = useRef(null);
+  const abortControllerRef = useRef(null); // AI流式请求取消控制器
 
   // ===== 智能快捷回复状态 =====
   const [quickReplies, setQuickReplies] = useState([]);
@@ -2131,7 +2134,94 @@ export default function Chat() {
       if (detectedTopic) setCurrentTopic(detectedTopic);
     }
 
-    // 模拟AI回复（带对话状态 + 打字机效果）
+    // ===== 取消进行中的流式请求 =====
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
+    // ===== AI流式回复（优先） + 规则引擎兜底 =====
+    if (AI_ENABLED) {
+      // 尝试AI流式回复
+      const aiMsgId = Date.now() + 1;
+      let firstChunkReceived = false;
+
+      // RAG检索：从知识库获取相关上下文
+      const { context: knowledgeContext } = retrieveKnowledgeContext(text);
+
+      streamAIResponse(
+        text,
+        newMessages,
+        knowledgeContext, // RAG增强：注入知识库上下文
+        // onChunk: 流式更新显示文本
+        (accumulatedText) => {
+          if (!firstChunkReceived) {
+            firstChunkReceived = true;
+            // 第一个chunk到达，创建AI消息占位
+            const aiMsg = {
+              id: aiMsgId,
+              sender: 'ai',
+              text: accumulatedText,
+              time: formatTime(new Date()),
+              isTyping: true
+            };
+            setMessages(prev => [...prev, aiMsg]);
+            setTypingMessageId(aiMsgId);
+            setDisplayedText(accumulatedText);
+            setIsTyping(false); // 隐藏"思考中"指示器
+          } else {
+            // 后续chunk，实时更新显示文本
+            setDisplayedText(accumulatedText);
+            // 同步更新消息文本（用于对话历史）
+            setMessages(prev => prev.map(m =>
+              m.id === aiMsgId ? { ...m, text: accumulatedText } : m
+            ));
+          }
+        },
+        // onComplete: 流式完成
+        (finalText) => {
+          setTypingMessageId(null);
+          setDisplayedText('');
+          setMessages(prev => prev.map(m =>
+            m.id === aiMsgId ? { ...m, text: finalText, isTyping: false } : m
+          ));
+          // 生成智能快捷回复
+          const replies = generateQuickReplies(finalText, topicResult.newTopic || currentTopic, mood);
+          setQuickReplies(replies);
+          abortControllerRef.current = null;
+
+          // 每3条消息推送一条关怀建议
+          setTipCount(prev => {
+            const newCount = prev + 1;
+            if (newCount % 3 === 0) {
+              setTimeout(() => {
+                const tip = selfCareTips[Math.floor(Math.random() * selfCareTips.length)];
+                setMessages(prev => [...prev, {
+                  id: Date.now() + 2,
+                  sender: 'tip',
+                  text: tip,
+                  time: formatTime(new Date())
+                }]);
+              }, 1500);
+            }
+            return newCount;
+          });
+        },
+        // onError: 降级到规则引擎
+        (error) => {
+          console.warn('AI流式回复失败，降级到规则引擎:', error.message);
+          setIsTyping(true); // 重新显示"思考中"
+          fallbackToRuleEngine(text, newMessages, newPhase, topicResult, updatedMemory);
+        }
+      );
+    } else {
+      // AI未启用，直接使用规则引擎
+      fallbackToRuleEngine(text, newMessages, newPhase, topicResult, updatedMemory);
+    }
+  };
+
+  // ===== 规则引擎兜底回复 =====
+  const fallbackToRuleEngine = (text, newMessages, newPhase, topicResult, updatedMemory) => {
     const delay = 800 + Math.random() * 1500;
     setTimeout(() => {
       try {
@@ -2147,7 +2237,7 @@ export default function Chat() {
           sender: 'ai',
           text: aiText || '我听到了你说的话，能再多告诉我一些吗？',
           time: formatTime(new Date()),
-          isTyping: true // 标记正在打字
+          isTyping: true
         };
         setMessages(prev => [...prev, aiMsg]);
         
@@ -2159,18 +2249,15 @@ export default function Chat() {
           setDisplayedText,
           setTypingMessageId,
           () => {
-            // 打字完成，更新消息状态并生成快捷回复
-            setMessages(prev => prev.map(m => 
+            setMessages(prev => prev.map(m =>
               m.id === aiMsgId ? { ...m, isTyping: false } : m
             ));
-            // 生成智能快捷回复
             const replies = generateQuickReplies(aiMsg.text, topicResult.newTopic || currentTopic, mood);
             setQuickReplies(replies);
           },
           typingTimerRef
         );
       } catch (e) {
-        // 如果AI回复生成出错，给出智能兜底回复
         console.error('AI回复生成错误:', e);
         const fallbackReplies = [
           '我听到了你说的话。能再多告诉我一些吗？我想更好地理解你的感受。',
@@ -2280,11 +2367,14 @@ export default function Chat() {
     }
   };
 
-  // ===== 清理打字机定时器 =====
+  // ===== 清理打字机定时器和流式请求 =====
   useEffect(() => {
     return () => {
       if (typingTimerRef.current) {
         clearTimeout(typingTimerRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
   }, []);
@@ -2394,7 +2484,7 @@ export default function Chat() {
             <h3>{aiName}</h3>
             <span className="ch-status">
               <span className="status-dot"></span>
-              {typingMessageId ? `${aiName}正在输入...` : '在线 · 随时倾听'}
+              {typingMessageId ? `${aiName}正在输入...` : (AI_ENABLED ? '在线 · AI增强模式' : '在线 · 随时倾听')}
             </span>
           </div>
         </div>

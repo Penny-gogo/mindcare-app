@@ -32,7 +32,7 @@
       "file": "src/data/knowledgeBase.js",
       "name": "核心知识库（EAP/CBT/MBSR/职场/危机干预等）",
       "type": "core",
-      "lastContentUpdate": "2026-07-25",
+      "lastContentUpdate": "2026-08-04",
       "lastChecked": "2026-08-04",
       "updateFrequency": "biweekly",
       "priority": "high",
@@ -62,7 +62,7 @@
         {
           "key": "workplaceMentalHealth",
           "name": "职场心理健康",
-          "lastUpdate": "2026-07-25"
+          "lastUpdate": "2026-08-04"
         },
         {
           "key": "warmResponseTemplates",
@@ -80,7 +80,7 @@
           "lastUpdate": "2026-07-25"
         }
       ],
-      "nextPlan": "补充职场倦怠最新研究（2026年）、更新EAP国内政策变化"
+      "nextPlan": "补充EAP国内政策变化、更新CBT最新应用研究"
     },
     "psychologySchools": {
       "file": "src/data/knowledge/psychologySchools.js",
@@ -134,17 +134,22 @@
       "file": "src/data/knowledge/articleCollection.js",
       "name": "网络心理文章采集框架",
       "type": "platform",
-      "lastContentUpdate": "2026-07-25",
+      "lastContentUpdate": "2026-08-04",
       "lastChecked": "2026-08-04",
       "updateFrequency": "weekly",
       "priority": "high",
       "staleDays": 7,
-      "status": "stale",
-      "articleCount": 8,
-      "nextPlan": "新增2-3篇：情绪管理主题(焦虑自助)、职场主题(远程办公心理)、亲密关系主题(依恋类型)"
+      "status": "fresh",
+      "articleCount": 11,
+      "nextPlan": "新增：ACT接纳承诺疗法详解、中国心理学家名言补充、AI心理陪伴App评测"
     }
   },
   "updateLog": [
+    {
+      "date": "2026-08-04",
+      "action": "content_update",
+      "description": "知识库更新：新增3篇文章(焦虑自助/远程办公/依恋安全基地)，更新职场倦怠2026研究，articleCollection 8→11篇"
+    },
     {
       "date": "2026-07-30",
       "action": "created_tracker",
@@ -187,25 +192,29 @@
         "topic": "焦虑自助实用指南",
         "source": "KnowYourself/壹心理",
         "targetModule": "articleCollection",
-        "status": "planned"
+        "status": "done",
+        "completedDate": "2026-08-04"
       },
       {
         "topic": "远程办公心理健康",
         "source": "职场心理研究",
         "targetModule": "articleCollection",
-        "status": "planned"
+        "status": "done",
+        "completedDate": "2026-08-04"
       },
       {
         "topic": "依恋类型与亲密关系",
         "source": "简单心理/书籍",
         "targetModule": "articleCollection",
-        "status": "planned"
+        "status": "done",
+        "completedDate": "2026-08-04"
       },
       {
         "topic": "职场倦怠2026最新研究",
         "source": "学术期刊",
         "targetModule": "knowledgeBase.workplaceMentalHealth",
-        "status": "planned"
+        "status": "done",
+        "completedDate": "2026-08-04"
       }
     ],
     "mediumPriority": [

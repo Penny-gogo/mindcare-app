@@ -2154,21 +2154,26 @@ export default function Chat() {
         newMessages,
         knowledgeContext, // RAG增强：注入知识库上下文
         // onChunk: 流式更新显示文本
-        (accumulatedText) => {
+        (accumulatedText, isThinking) => {
           if (!firstChunkReceived) {
             firstChunkReceived = true;
             // 第一个chunk到达，创建AI消息占位
             const aiMsg = {
               id: aiMsgId,
               sender: 'ai',
-              text: accumulatedText,
+              text: isThinking ? '🤔 思考中...' : accumulatedText,
               time: formatTime(new Date()),
               isTyping: true
             };
             setMessages(prev => [...prev, aiMsg]);
             setTypingMessageId(aiMsgId);
-            setDisplayedText(accumulatedText);
+            setDisplayedText(isThinking ? '' : accumulatedText);
             setIsTyping(false); // 隐藏"思考中"指示器
+          } else if (isThinking) {
+            // 思考阶段，保持思考提示
+            setMessages(prev => prev.map(m =>
+              m.id === aiMsgId ? { ...m, text: '🤔 思考中...' } : m
+            ));
           } else {
             // 后续chunk，实时更新显示文本
             setDisplayedText(accumulatedText);

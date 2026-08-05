@@ -2161,7 +2161,7 @@ export default function Chat() {
             const aiMsg = {
               id: aiMsgId,
               sender: 'ai',
-              text: isThinking ? '🤔 思考中...' : accumulatedText,
+              text: isThinking ? '思考中...' : accumulatedText,
               time: formatTime(new Date()),
               isTyping: true
             };
@@ -2172,7 +2172,7 @@ export default function Chat() {
           } else if (isThinking) {
             // 思考阶段，保持思考提示
             setMessages(prev => prev.map(m =>
-              m.id === aiMsgId ? { ...m, text: '🤔 思考中...' } : m
+              m.id === aiMsgId ? { ...m, text: '思考中...' } : m
             ));
           } else {
             // 后续chunk，实时更新显示文本

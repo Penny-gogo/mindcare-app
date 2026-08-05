@@ -190,9 +190,9 @@ export async function streamAIResponse(userMessage, conversationHistory, knowled
           const parsed = JSON.parse(data);
           const delta = parsed.choices?.[0]?.delta;
           
-          // DeepSeek V4 深度思考模式：reasoning_content阶段只显示思考提示
-          if (delta?.reasoning_content && !delta?.content && fullText === '') {
-            onChunk('🤔 思考中...', true); // isThinking标记
+          // DeepSeek V4 深度思考模式：reasoning_content阶段显示思考提示
+          if (delta?.reasoning_content && !delta?.content) {
+            onChunk('思考中...', true); // isThinking标记
           }
           
           // 正式内容输出

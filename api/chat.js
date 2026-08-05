@@ -7,20 +7,23 @@
  * 环境变量：DEEPSEEK_API_KEY=sk-your-key
  */
 
+import { createHmac } from 'node:crypto';
+import { createClient } from '@supabase/supabase-js';
+
 // ===== 限流配置 =====
 const RATE_LIMIT = {
-  maxRequests: 20,      // 每个IP每分钟最大请求数
-  windowMs: 60 * 1000,  // 时间窗口：60秒
+  maxRequests: 20,
+  windowMs: 60 * 1000,
 };
+const DAILY_QUOTA = { guest: 5, authenticated: 20 };
 
-// 简易内存限流存储（生产环境建议用Redis）
+// 分钟级限流仅作突发流量防护；每日额度由 Supabase 持久化。
 const requestStore = new Map();
 
 function checkRateLimit(ip) {
   const now = Date.now();
   const record = requestStore.get(ip);
 
-  // 清理过期记录
   if (record && now - record.startTime > RATE_LIMIT.windowMs) {
     requestStore.delete(ip);
   }
@@ -39,16 +42,48 @@ function checkRateLimit(ip) {
   return { allowed: true, remaining: RATE_LIMIT.maxRequests - current.count };
 }
 
+function createSupabaseAdmin() {
+  const url = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceRoleKey) return null;
+  return createClient(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+async function resolveIdentity(req, supabase, clientIp) {
+  const authorization = req.headers.authorization || '';
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : null;
+  if (token) {
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data.user) throw new Error('INVALID_AUTH_TOKEN');
+    return { key: `user:${data.user.id}`, limit: DAILY_QUOTA.authenticated };
+  }
+
+  const secret = process.env.QUOTA_HASH_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const digest = createHmac('sha256', secret).update(String(clientIp)).digest('hex');
+  return { key: `guest:${digest}`, limit: DAILY_QUOTA.guest };
+}
+
+async function consumeDailyQuota(supabase, identity) {
+  const { data, error } = await supabase.rpc('consume_daily_ai_quota', {
+    p_identity_key: identity.key,
+    p_daily_limit: identity.limit,
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
+}
+
 // ===== 内容安全审核 =====
 const UNSAFE_PATTERNS = [
   // 暴力相关
-  /如何.*制作.*[炸弹|武器|毒药]/,
+  /如何.*制作.*(?:炸弹|武器|毒药)/,
   /如何.*伤害.*他人/,
   // 违法相关
-  /如何.*[盗|偷|抢].*[银行|账户|密码]/,
+  /如何.*(?:盗|偷|抢).*(?:银行|账户|密码)/,
   // 自伤指导（与危机检测不同，这是阻止AI给出方法）
-  /怎么.*自杀.*[方法|方式|最快]/,
-  /什么.*死法.*最[不痛|快|舒服]/,
+  /怎么.*自杀.*(?:方法|方式|最快)/,
+  /什么.*死法.*最(?:不痛|快|舒服)/,
 ];
 
 function checkContentSafety(messages) {
@@ -95,7 +130,7 @@ export default async function handler(req, res) {
   // CORS 设置
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -117,30 +152,60 @@ export default async function handler(req, res) {
     });
   }
 
-  // 验证API Key
+  const supabase = createSupabaseAdmin();
+  if (!supabase) {
+    return res.status(500).json({ error: '额度服务配置错误，请稍后重试' });
+  }
+
+  let identity;
+  try {
+    identity = await resolveIdentity(req, supabase, clientIp);
+  } catch (error) {
+    if (error.message === 'INVALID_AUTH_TOKEN') {
+      return res.status(401).json({ error: '登录状态已失效，请重新登录' });
+    }
+    console.error('Identity service error:', error);
+    return res.status(503).json({ error: '身份服务暂不可用，请稍后重试' });
+  }
+
+  // 验证API Key和请求格式后再消费每日额度，避免无效请求扣减额度。
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: '服务配置错误，请稍后重试' });
   }
 
+  const { messages, stream = true } = req.body || {};
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: '消息格式错误' });
+  }
+
+  const safetyCheck = checkContentSafety(messages);
+  if (!safetyCheck.safe) {
+    return res.status(200).json({
+      choices: [{
+        message: { role: 'assistant', content: safetyCheck.fallback },
+        finish_reason: 'stop'
+      }],
+      _safety_filtered: true
+    });
+  }
+
   try {
-    const { messages, stream = true } = req.body;
-
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return res.status(400).json({ error: '消息格式错误' });
-    }
-
-    // 内容安全审核
-    const safetyCheck = checkContentSafety(messages);
-    if (!safetyCheck.safe) {
-      return res.status(200).json({
-        choices: [{
-          message: { role: 'assistant', content: safetyCheck.fallback },
-          finish_reason: 'stop'
-        }],
-        _safety_filtered: true
+    const dailyResult = await consumeDailyQuota(supabase, identity);
+    res.setHeader('X-DailyLimit-Remaining', dailyResult?.remaining ?? 0);
+    if (!dailyResult?.allowed) {
+      return res.status(429).json({
+        error: '今日AI对话额度已用完，请明天再试',
+        code: 'DAILY_QUOTA_EXCEEDED',
+        requiresLogin: identity.key.startsWith('guest:'),
       });
     }
+  } catch (error) {
+    console.error('Quota service error:', error);
+    return res.status(503).json({ error: '额度服务暂不可用，请稍后重试' });
+  }
+
+  try {
 
     // 注入服务端系统提示词（替换客户端传入的，防止篡改）
     const serverMessages = [

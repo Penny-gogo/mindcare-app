@@ -36,7 +36,11 @@ export default function Register() {
 
     const result = await register(name, email, password);
     if (result.success) {
-      navigate('/');
+      if (result.requiresEmailConfirmation) {
+        navigate('/login', { state: { message: '注册成功，请先前往邮箱完成验证后再登录。' } });
+      } else {
+        navigate('/');
+      }
     } else {
       setError(result.message);
     }

@@ -16,10 +16,8 @@ export default function Footer() {
         <div className="footer-section">
           <h3>📋 服务</h3>
           <ul>
-            <li><Link to="/counselors">咨询师预约</Link></li>
             <li><Link to="/chat">AI心灵伙伴「小暖」</Link></li>
             <li><Link to="/assessment">心理测评</Link></li>
-            <li><Link to="/treehole">匿名树洞</Link></li>
           </ul>
         </div>
         <div className="footer-section">

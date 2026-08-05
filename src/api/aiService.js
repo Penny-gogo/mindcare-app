@@ -2,6 +2,7 @@
 // 设计原则：流式优先 + 规则引擎兜底 + 危机检测本地执行 + 隐私脱敏 + 限流 + 内容安全
 
 import { tryConsumeToken, getRateLimitStatus } from './rateLimiter';
+import { getAccessToken } from './auth';
 import { comprehensiveSafetyCheck } from './contentFilter';
 
 // ===== 环境适配 =====
@@ -99,7 +100,7 @@ function buildMessages(userMessage, conversationHistory, knowledgeContext) {
 }
 
 // ===== 流式调用DeepSeek API =====
-export async function streamAIResponse(userMessage, conversationHistory, knowledgeContext, onChunk, onComplete, onError) {
+export async function streamAIResponse(userMessage, conversationHistory, knowledgeContext, user, onChunk, onComplete, onError) {
   // 1. 本地危机检测（最高优先级，不走API）
   if (detectCrisisLocal(userMessage)) {
     const crisisReply = getCrisisResponseLocal();
@@ -118,8 +119,18 @@ export async function streamAIResponse(userMessage, conversationHistory, knowled
   }
 
   // 3. 客户端限流检查
-  const rateResult = tryConsumeToken();
+  const rateResult = tryConsumeToken(user);
   if (!rateResult.allowed) {
+    if (rateResult.reason === 'daily_quota') {
+      const message = user
+        ? `你今天的${rateResult.dailyLimit}次AI对话额度已用完，请明天再来。`
+        : `游客每天可免费对话${rateResult.dailyLimit}次，登录后每天可使用20次。`;
+      const quotaError = new Error(message);
+      quotaError.code = 'DAILY_QUOTA_EXCEEDED';
+      quotaError.requiresLogin = !user;
+      onError(quotaError);
+      return;
+    }
     const waitSec = Math.ceil(rateResult.retryAfterMs / 1000);
     onError(new Error(`请求过于频繁，请${waitSec}秒后再试`));
     return;
@@ -137,9 +148,12 @@ export async function streamAIResponse(userMessage, conversationHistory, knowled
   const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
 
   const requestHeaders = { 'Content-Type': 'application/json' };
-  // 开发环境通过Vite proxy，需要传API Key
+  // 开发环境通过Vite proxy，需要传DeepSeek API Key；生产环境传Supabase会话令牌。
   if (isDev && apiKey) {
     requestHeaders['Authorization'] = `Bearer ${apiKey}`;
+  } else if (!isDev) {
+    const accessToken = await getAccessToken();
+    if (accessToken) requestHeaders['Authorization'] = `Bearer ${accessToken}`;
   }
 
   const requestBody = isDev
@@ -249,6 +263,9 @@ export async function fetchAIResponse(userMessage, conversationHistory, knowledg
   const requestHeaders = { 'Content-Type': 'application/json' };
   if (isDev && apiKey) {
     requestHeaders['Authorization'] = `Bearer ${apiKey}`;
+  } else if (!isDev) {
+    const accessToken = await getAccessToken();
+    if (accessToken) requestHeaders['Authorization'] = `Bearer ${accessToken}`;
   }
 
   const requestBody = isDev

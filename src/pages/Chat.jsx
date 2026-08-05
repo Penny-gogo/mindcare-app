@@ -2169,6 +2169,7 @@ export default function Chat() {
         text,
         newMessages,
         knowledgeContext, // RAG增强：注入知识库上下文
+        user, // 用于区分游客与登录用户的每日额度
         // onChunk: 流式更新显示文本
         (accumulatedText, isThinking) => {
           if (!firstChunkReceived) {
@@ -2230,6 +2231,19 @@ export default function Chat() {
         },
         // onError: 降级到规则引擎
         (error) => {
+          if (error.code === 'DAILY_QUOTA_EXCEEDED') {
+            setIsTyping(false);
+            setMessages(prev => [...prev, {
+              id: Date.now() + 1,
+              sender: 'ai',
+              text: error.message,
+              time: formatTime(new Date())
+            }]);
+            if (error.requiresLogin) {
+              setQuickReplies([{ text: '登录解锁更多对话', action: () => navigate('/login') }]);
+            }
+            return;
+          }
           console.warn('AI流式回复失败，降级到规则引擎:', error.message);
           setIsTyping(true); // 重新显示"思考中"
           fallbackToRuleEngine(text, newMessages, newPhase, topicResult, updatedMemory);
@@ -2324,9 +2338,13 @@ export default function Chat() {
   };
 
   // ===== 快捷回复点击处理 =====
-  const handleQuickReply = (replyText) => {
+  const handleQuickReply = (reply) => {
     setQuickReplies([]);
-    handleSend(replyText);
+    if (reply.action) {
+      reply.action();
+      return;
+    }
+  handleSend(reply.text);
   };
 
   // ===== 消息反馈处理 =====
@@ -2628,7 +2646,7 @@ export default function Chat() {
             <button 
               key={i} 
               className="quick-reply-btn"
-              onClick={() => handleQuickReply(reply.text)}
+              onClick={() => handleQuickReply(reply)}
             >
               {reply.text}
             </button>

@@ -11,7 +11,6 @@ export default function Profile() {
   const [saved, setSaved] = useState(false);
 
   if (!user) {
-    navigate('/login');
     return null;
   }
 
@@ -74,8 +73,8 @@ export default function Profile() {
           <div className="profile-section">
             <h3>账号设置</h3>
             <div className="profile-actions">
-              <button className="btn-action" onClick={() => navigate('/appointments')}>
-                📅 我的预约
+              <button className="btn-action" onClick={() => navigate('/assessment')}>
+                🎯 心理测评
               </button>
               <button className="btn-action" onClick={() => navigate('/chat')}>
                 💬 在线咨询

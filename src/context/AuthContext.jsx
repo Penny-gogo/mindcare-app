@@ -7,64 +7,64 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 初始化：从 localStorage 或 API 恢复用户状态
   useEffect(() => {
-    const initUser = async () => {
-      try {
-        const saved = localStorage.getItem('eap_user');
-        if (saved) {
-          setUser(JSON.parse(saved));
-        }
-      } catch (e) {
-        console.error('恢复用户状态失败:', e);
-        localStorage.removeItem('eap_user');
+    let active = true;
+    authApi.getCurrentUser()
+      .then(currentUser => {
+        if (active) setUser(currentUser);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    const unsubscribe = authApi.onAuthStateChange(nextUser => {
+      if (active) {
+        setUser(nextUser);
+        setLoading(false);
       }
-      setLoading(false);
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
     };
-    initUser();
   }, []);
 
   const login = async (email, password) => {
     try {
       const result = await authApi.login(email, password);
-      if (result.success) {
-        setUser(result.user);
-        return { success: true };
-      }
+      if (result.success) setUser(result.user);
       return result;
     } catch (error) {
-      return { success: false, message: '登录失败，请稍后重试' };
+      return { success: false, message: error.message || '登录失败，请稍后重试' };
     }
   };
 
   const register = async (name, email, password, role = 'employee', department = '') => {
     try {
       const result = await authApi.register(name, email, password, role, department);
-      if (result.success) {
-        setUser(result.user);
-        return { success: true };
-      }
+      if (result.success && !result.requiresEmailConfirmation) setUser(result.user);
       return result;
     } catch (error) {
-      return { success: false, message: '注册失败，请稍后重试' };
+      return { success: false, message: error.message || '注册失败，请稍后重试' };
     }
   };
 
-  const logout = () => {
-    authApi.logout();
-    setUser(null);
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } finally {
+      setUser(null);
+    }
   };
 
   const updateProfile = async (updates) => {
     try {
       const updatedUser = await authApi.updateProfile(updates);
-      if (updatedUser) {
-        setUser(updatedUser);
-        return { success: true };
-      }
-      return { success: false, message: '更新失败' };
+      setUser(updatedUser);
+      return { success: true };
     } catch (error) {
-      return { success: false, message: '更新失败，请稍后重试' };
+      return { success: false, message: error.message || '更新失败，请稍后重试' };
     }
   };
 
@@ -74,9 +74,7 @@ export function AuthProvider({ children }) {
     hrbp: 'HRBP',
   };
 
-  if (loading) {
-    return null; // 或返回 loading 组件
-  }
+  if (loading) return null;
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout, updateProfile, roleLabels }}>

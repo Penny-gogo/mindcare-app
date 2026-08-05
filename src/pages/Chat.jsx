@@ -22,6 +22,7 @@ const moodOptions = [
   { emoji: '😰', label: '焦虑', level: 'anxious' },
   { emoji: '😤', label: '烦躁', level: 'stressed' },
   { emoji: '😴', label: '疲惫', level: 'tired' },
+  { emoji: '✍️', label: '其他', level: 'custom' },
 ];
 
 const quickTopics = [
@@ -341,6 +342,10 @@ const moodResponses = {
   tired: [
     '疲惫是身体在告诉你需要休息了。职业倦怠研究显示，持续的疲惫感是情绪耗竭的早期信号。\n\n你最近是不是一直在超负荷运转？让我了解一下你的情况，看看怎么帮你调整一下。',
     '持续的疲惫感值得重视。MBSR正念减压疗法建议：每天给自己3分钟的「无任务时间」——不做事、不看手机、只是呼吸。\n\n你最近的工作和生活节奏是怎样的？有时候，小小的调整就能带来很大的改善。'
+  ],
+  custom: [
+    '谢谢你愿意告诉我你的感受。每一种心情都值得被看见和尊重。\n\n你愿意多说一些吗？比如是什么让你有这样的感受？我在这里听你说。',
+    '我听到了，你现在的感受是真实的。不管是什么心情，都没有对错之分。\n\n能跟我说说，是什么事情让你有这样的感受吗？有时候把感受说出来，本身就能带来一些释放。'
   ]
 };
 
@@ -1994,6 +1999,10 @@ export default function Chat() {
   const [showNameModal, setShowNameModal] = useState(false);
   const [nameInput, setNameInput] = useState('');
 
+  // ===== 自定义心情输入 =====
+  const [showCustomMood, setShowCustomMood] = useState(false);
+  const [customMoodInput, setCustomMoodInput] = useState('');
+
   const handleNameSubmit = () => {
     const trimmed = nameInput.trim();
     if (trimmed && trimmed.length <= 8) {
@@ -2065,6 +2074,8 @@ export default function Chat() {
     setTipCount(0);
     setConversationPhase(CONVERSATION_PHASES.GREETING);
     setCurrentTopic(null);
+    setShowCustomMood(false);
+    setCustomMoodInput('');
   };
 
   const handleMoodSelect = (selectedMood) => {
@@ -2079,11 +2090,16 @@ export default function Chat() {
     // 更新对话阶段
     setConversationPhase(CONVERSATION_PHASES.GREETING);
 
+    // 自定义心情时，在回复中融入用户的心情描述
+    const moodDisplay = selectedMood.level === 'custom'
+      ? `${selectedMood.emoji} ${selectedMood.label}`
+      : `${selectedMood.emoji} ${selectedMood.label}`;
+
     setMessages([
       {
         id: 1,
         sender: 'ai',
-        text: `${greetingPrefix}你好呀，我是${aiName}，你的AI心灵伙伴 🤗\n\n我看到你今天的心情是 ${selectedMood.emoji} ${selectedMood.label}。\n\n${aiReply}`,
+        text: `${greetingPrefix}你好呀，我是${aiName}，你的AI心灵伙伴 🤗\n\n我看到你今天的心情是 ${moodDisplay}。\n\n${aiReply}`,
         time: formatTime(new Date())
       }
     ]);
@@ -2465,14 +2481,51 @@ export default function Chat() {
             {moodOptions.map(m => (
               <button
                 key={m.level}
-                className="mood-btn"
-                onClick={() => handleMoodSelect(m)}
+                className={`mood-btn${m.level === 'custom' ? ' mood-btn-custom' : ''}`}
+                onClick={() => {
+                  if (m.level === 'custom') {
+                    setShowCustomMood(true);
+                  } else {
+                    handleMoodSelect(m);
+                  }
+                }}
               >
                 <span className="mood-emoji">{m.emoji}</span>
                 <span className="mood-label">{m.label}</span>
               </button>
             ))}
           </div>
+          {showCustomMood && (
+            <div className="custom-mood-input-area">
+              <div className="custom-mood-row">
+                <input
+                  type="text"
+                  className="custom-mood-input"
+                  placeholder="写下你现在的心情..."
+                  value={customMoodInput}
+                  onChange={e => setCustomMoodInput(e.target.value)}
+                  maxLength={20}
+                  autoFocus
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && customMoodInput.trim()) {
+                      handleMoodSelect({ emoji: '💬', label: customMoodInput.trim(), level: 'custom' });
+                    }
+                  }}
+                />
+                <button
+                  className="custom-mood-submit"
+                  disabled={!customMoodInput.trim()}
+                  onClick={() => {
+                    if (customMoodInput.trim()) {
+                      handleMoodSelect({ emoji: '💬', label: customMoodInput.trim(), level: 'custom' });
+                    }
+                  }}
+                >
+                  确定
+                </button>
+              </div>
+            </div>
+          )}
           <p className="mood-privacy">🔒 你的对话内容完全保密，不会与任何人分享</p>
         </div>
       </div>

@@ -247,16 +247,30 @@ export default async function handler(req, res) {
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
 
-      // Vercel云函数中fetch返回Web ReadableStream，需用getReader()
+      // 将上游 SSE 事件标准化为以空行分隔，避免 Vercel 合并数据块后
+      // 出现 `}data:` 粘连，导致浏览器端无法逐条解析。
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let upstreamBuffer = '';
 
       try {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          res.write(decoder.decode(value, { stream: true }));
+
+          upstreamBuffer += decoder.decode(value, { stream: true });
+          const events = upstreamBuffer.split(/(?=data:\s*)/g);
+          upstreamBuffer = events.pop() || '';
+
+          for (const event of events) {
+            const normalized = event.trim();
+            if (normalized) res.write(`${normalized}\n\n`);
+          }
         }
+
+        upstreamBuffer += decoder.decode();
+        const normalized = upstreamBuffer.trim();
+        if (normalized) res.write(`${normalized}\n\n`);
       } catch (err) {
         console.error('Stream error:', err);
       } finally {

@@ -168,7 +168,7 @@ export default async function handler(req, res) {
     };
 
     if (stream) {
-      // 流式转发
+      // 流式转发 - 使用Web Streams API（Vercel兼容）
       const response = await fetch('https://api.deepseek.com/chat/completions', fetchOptions);
 
       if (!response.ok) {
@@ -182,17 +182,21 @@ export default async function handler(req, res) {
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
 
-      const reader = response.body;
-      reader.on('data', (chunk) => {
-        res.write(chunk);
-      });
-      reader.on('end', () => {
-        res.end();
-      });
-      reader.on('error', (err) => {
+      // Vercel云函数中fetch返回Web ReadableStream，需用getReader()
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(decoder.decode(value, { stream: true }));
+        }
+      } catch (err) {
         console.error('Stream error:', err);
+      } finally {
         res.end();
-      });
+      }
     } else {
       // 非流式
       const response = await fetch('https://api.deepseek.com/chat/completions', fetchOptions);

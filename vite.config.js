@@ -18,7 +18,7 @@ function fixGithubPagesPlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), fixGithubPagesPlugin()],
-  base: '/mindcare-app/',  // GitHub Pages: 仓库名作为base路径
+  base: process.env.VITE_BASE || '/mindcare-app/',  // GitHub Pages: 仓库名; Vercel: 设VITE_BASE=/
   build: {
     rollupOptions: {
       output: {

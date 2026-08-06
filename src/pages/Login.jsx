@@ -69,6 +69,10 @@ export default function Login() {
             />
           </div>
 
+          <div className="auth-links">
+            <Link to="/forgot-password">忘记密码？</Link>
+          </div>
+
           <button type="submit" className="auth-submit" disabled={loading}>
             {loading ? '登录中...' : '登录'}
           </button>

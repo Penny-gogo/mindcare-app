@@ -77,9 +77,32 @@ export async function logout() {
   if (error) throw error;
 }
 
+export async function requestPasswordReset(email) {
+  ensureConfigured();
+  // 生产环境使用正式域名，开发环境使用 localhost
+  const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
+  const redirectTo = `${siteUrl}/?recovery=1`;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) return { success: false, message: error.message };
+  return { success: true };
+}
+
+export async function updatePassword(password) {
+  ensureConfigured();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { success: false, message: error.message };
+  return { success: true };
+}
+
 export function onAuthStateChange(callback) {
   if (!supabase) return () => {};
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    // PASSWORD_RECOVERY 事件：用户从重置邮件链接回来，Supabase 已自动提取 token
+    // 使用 replace 避免回退到包含 token 的 URL
+    if (event === 'PASSWORD_RECOVERY') {
+      window.location.replace('/#/reset-password');
+      return;
+    }
     callback(toUser(session?.user));
   });
   return () => data.subscription.unsubscribe();

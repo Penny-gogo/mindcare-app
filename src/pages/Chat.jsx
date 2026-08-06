@@ -15,6 +15,35 @@ const DEFAULT_AI_NAME = '小暖';
 const AI_AVATAR = '🤗';
 const AI_NAME_KEY = 'mindcare_ai_name';
 
+// ===== 确定性选择器：用消息哈希替代 Math.random()，确保相同输入产生相同回复 =====
+// 提升回复可预测性和对话连贯性，避免"每次问同样问题得到不同答案"的体验
+function deterministicPick(arr, seed) {
+  if (!arr || arr.length === 0) return null;
+  if (arr.length === 1) return arr[0];
+  // 简单哈希：将seed转为数字，映射到数组索引
+  let hash = 0;
+  const str = String(seed || '');
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0; // 转为32位整数
+  }
+  const idx = Math.abs(hash) % arr.length;
+  return arr[idx];
+}
+
+// 概率性选择：用哈希判断是否触发（替代 Math.random() < threshold）
+function deterministicChance(seed, threshold) {
+  if (threshold >= 1) return true;
+  if (threshold <= 0) return false;
+  let hash = 0;
+  const str = String(seed || '');
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return (Math.abs(hash) % 100) < (threshold * 100);
+}
+
 const moodOptions = [
   { emoji: '😊', label: '开心', level: 'good' },
   { emoji: '😌', label: '平静', level: 'good' },
@@ -434,7 +463,7 @@ function matchSchool(userMessage) {
 
   const match = schoolMatchingMap[bestMatch];
   // 从匹配到的流派中随机选一个
-  const schoolKey = match.schools[Math.floor(Math.random() * match.schools.length)];
+  const schoolKey = deterministicPick(match.schools, msg);
   const school = psychologySchools[schoolKey];
 
   return { category: bestMatch, schoolKey, school, quoteScenarios: match.quoteScenarios };
@@ -453,7 +482,7 @@ function getSchoolInsight(school) {
 
   // 提取关键技术（选1个）
   if (school.keyTechniques?.length) {
-    const tech = school.keyTechniques[Math.floor(Math.random() * school.keyTechniques.length)];
+    const tech = deterministicPick(school.keyTechniques, msg + '_tech');
     if (tech.example) {
       insights.push(`💡 【${school.name}·${tech.technique}】${tech.example}`);
     } else if (tech.desc) {
@@ -463,24 +492,24 @@ function getSchoolInsight(school) {
 
   // DBT特殊处理：从四模块中提取
   if (school.fourModules?.length) {
-    const mod = school.fourModules[Math.floor(Math.random() * school.fourModules.length)];
+    const mod = deterministicPick(school.fourModules, msg + '_mod');
     insights.push(`💡 【DBT·${mod.module}】${mod.practicalExercise}`);
   }
 
   // ACT六边形模型
   if (school.hexaflexModel?.length) {
-    const process = school.hexaflexModel[Math.floor(Math.random() * school.hexaflexModel.length)];
+    const process = deterministicPick(school.hexaflexModel, msg + '_process');
     insights.push(`💡 【ACT·${process.process}】${process.metaphor}`);
   }
 
-  return insights.length > 0 ? insights[Math.floor(Math.random() * insights.length)] : null;
+  return insights.length > 0 ? deterministicPick(insights, msg + '_insight') : null;
 }
 
 // 根据场景匹配心理学家名言
 function getRelevantQuote(scenarios) {
   if (!scenarios || scenarios.length === 0) return null;
 
-  const targetScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+  const targetScenario = deterministicPick(scenarios, msg + '_scenario');
   const allQuotes = [];
 
   // 遍历所有心理学家，收集匹配场景的名言
@@ -495,7 +524,7 @@ function getRelevantQuote(scenarios) {
   }
 
   if (allQuotes.length === 0) return null;
-  const selected = allQuotes[Math.floor(Math.random() * allQuotes.length)];
+  const selected = deterministicPick(allQuotes, msg + '_quote');
   return `📖 ${selected.author}：「${selected.text}」\n💬 ${selected.warmReading}`;
 }
 
@@ -549,7 +578,7 @@ function matchArticle(userMessage) {
   if (!articles || articles.length === 0) return null;
 
   // 从该分类中随机选一篇文章
-  const article = articles[Math.floor(Math.random() * articles.length)];
+  const article = deterministicPick(articles, msg + '_article');
 
   return { categoryKey, categoryName: category.name, article };
 }
@@ -563,20 +592,20 @@ function getArticleEnhancement(articleMatch) {
 
   // 提取核心洞察（选1条）
   if (article.coreInsights?.length) {
-    const insight = article.coreInsights[Math.floor(Math.random() * article.coreInsights.length)];
+    const insight = deterministicPick(article.coreInsights, msg + '_coreInsight');
     parts.push(`📚 研究发现：${insight.insight}（${insight.evidence}）`);
   }
 
   // 提取实操建议（选1条）
   if (article.practicalTips?.length) {
-    const tip = article.practicalTips[Math.floor(Math.random() * article.practicalTips.length)];
+    const tip = deterministicPick(article.practicalTips, msg + '_tip');
     const stepsText = tip.steps.slice(0, 3).join('→');
     parts.push(`💡 【${tip.tip}】${stepsText}${tip.steps.length > 3 ? '→...' : ''}`);
   }
 
   // 提取温暖话术（选1条，50%概率）
-  if (article.warmPhrases?.length && Math.random() < 0.5) {
-    const warm = article.warmPhrases[Math.floor(Math.random() * article.warmPhrases.length)];
+  if (article.warmPhrases?.length && deterministicChance(msg + '_warm', 0.5)) {
+    const warm = deterministicPick(article.warmPhrases, msg + '_warm');
     parts.push(`💚 ${warm.phrase}`);
   }
 
@@ -912,7 +941,7 @@ function generateWelcomeBackMessage(memory, lastTopic) {
     '最近有什么新的感受吗？',
     '想继续上次的话题，还是聊点新的？'
   ];
-  greetings.push(followUps[Math.floor(Math.random() * followUps.length)]);
+  greetings.push(deterministicPick(followUps, msg + '_greeting'));
   
   return greetings.join(' ');
 }
@@ -1076,7 +1105,7 @@ function getTopicTransition(oldTopic, newTopic) {
     `嗯，${topicNames[newTopic] || '这个话题'}也很重要。`,
     `我理解，${topicNames[newTopic] || '这方面'}的困扰确实需要关注。`,
   ];
-  return transitions[Math.floor(Math.random() * transitions.length)];
+  return deterministicPick(transitions, msg + '_transition');
 }
 
 // ===== 5. 主动追问策略 =====
@@ -1094,7 +1123,7 @@ function generateFollowUpQuestion(userMessage, conversationHistory, currentTopic
       '我在听，可以告诉我更多细节吗？',
       '谢谢你愿意分享。能说说具体是什么情况吗？'
     ];
-    return expandQuestions[Math.floor(Math.random() * expandQuestions.length)];
+    return deterministicPick(expandQuestions, msg + '_expand');
   }
   
   // 基于话题的深度追问
@@ -1147,7 +1176,7 @@ function generateFollowUpQuestion(userMessage, conversationHistory, currentTopic
     const recentAiText = aiMsgs.slice(-3).map(m => m.text).join(' ');
     const unusedQuestions = questions.filter(q => !recentAiText.includes(q.slice(0, 10)));
     if (unusedQuestions.length > 0) {
-      return unusedQuestions[Math.floor(Math.random() * unusedQuestions.length)];
+      return deterministicPick(unusedQuestions, msg + '_unused');
     }
   }
   
@@ -1159,7 +1188,7 @@ function generateFollowUpQuestion(userMessage, conversationHistory, currentTopic
     '在你经历这些的时候，内心最需要的是什么？'
   ];
   
-  return generalDeepQuestions[Math.floor(Math.random() * generalDeepQuestions.length)];
+  return deterministicPick(generalDeepQuestions, msg + '_deepQ');
 }
 
 // ===== 6. 分层共情表达系统 =====
@@ -1210,7 +1239,7 @@ function generateShallowEmpathy(msg, emotion) {
     ]
   };
   const options = empathyMap[emotion] || empathyMap[EMOTION_TYPES.NEUTRAL];
-  return options[Math.floor(Math.random() * options.length)];
+  return deterministicPick(options, msg + '_option');
 }
 
 function generateDeepEmpathy(msg, emotion) {
@@ -1231,7 +1260,7 @@ function generateDeepEmpathy(msg, emotion) {
   };
   const options = deepEmpathyMap[emotion];
   if (!options) return null;
-  return options[Math.floor(Math.random() * options.length)];
+  return deterministicPick(options, msg + '_option');
 }
 
 function generateActionGuidance(msg, emotion) {
@@ -1250,7 +1279,7 @@ function generateActionGuidance(msg, emotion) {
   };
   const options = guidanceMap[emotion];
   if (!options) return null;
-  return options[Math.floor(Math.random() * options.length)];
+  return deterministicPick(options, msg + '_option');
 }
 
 // ===== 7. 动态策略调整 =====
@@ -1321,7 +1350,7 @@ function generateDriftRepair(driftType, currentTopic) {
       '有时候确实不知道从何说起。不如我提几个方向，你看看哪个最想聊？\n\n1️⃣ 最近工作上的感受\n2️⃣ 和身边人的关系\n3️⃣ 睡眠和身体状态\n4️⃣ 对未来的想法',
       '没关系，不用有压力。你可以先深呼吸一次，然后告诉我：现在最让你不舒服的是什么？哪怕只是一个词也行。'
     ];
-    return repairs[Math.floor(Math.random() * repairs.length)];
+    return deterministicPick(repairs, msg + '_repair');
   }
   
   if (driftType === 'uncertainty') {
@@ -1330,7 +1359,7 @@ function generateDriftRepair(driftType, currentTopic) {
       '「不知道」本身也是一种答案——说明你可能还在消化这些感受。\n\n我换个方式问：如果0分是完全不好，10分是完全好，你给自己现在的状态打几分？',
       '没关系，我们慢慢来。你可以试着完成这个句子：「如果可以改变一件事，我想要……」——看看脑海中浮现的第一个念头是什么？'
     ];
-    return repairs[Math.floor(Math.random() * repairs.length)];
+    return deterministicPick(repairs, msg + '_repair');
   }
   
   return null;
@@ -1402,7 +1431,7 @@ function generateContextualResponse(userMessage, conversationHistory) {
     
     const replies = contextualReplies[userFocus.focus];
     if (replies) {
-      return replies[Math.floor(Math.random() * replies.length)];
+      return deterministicPick(replies, msg + '_ctxReply');
     }
   }
   
@@ -1423,7 +1452,7 @@ function generateContextualResponse(userMessage, conversationHistory) {
           `谢谢你告诉我这些。你能够这样表达，说明你对自己有很好的觉察。\n\n让我们一起看看，有什么方法可以帮你感觉好一些？`,
           `我理解了你的情况。这确实是一个挑战。你之前有尝试过什么方式来应对吗？`
         ];
-        return followUpReplies[Math.floor(Math.random() * followUpReplies.length)];
+        return deterministicPick(followUpReplies, msg + '_followUp');
       }
     }
   }
@@ -1479,7 +1508,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
   // ===== 优先级2: 基础对话模式 =====
   for (const pattern of basicPatterns) {
     if (pattern.keywords.some(kw => msg.includes(kw))) {
-      let response = pattern.responses[Math.floor(Math.random() * pattern.responses.length)];
+      let response = deterministicPick(pattern.responses, msg);
       // 个性化增强：如果知道用户名字，在问候中加入
       if (userMemory.name && (msg.includes('你好') || msg.includes('嗨') || msg.includes('hi'))) {
         response = `${userMemory.name}，${response}`;
@@ -1501,7 +1530,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
   for (const pattern of responsePatterns) {
     if (pattern.keywords.some(kw => msg.includes(kw))) {
       const responses = pattern.responses;
-      baseResponse = responses[Math.floor(Math.random() * responses.length)];
+      baseResponse = deterministicPick(responses, msg);
       break;
     }
   }
@@ -1525,7 +1554,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
     finalResponse += baseResponse;
     
     // 深层共情（exploring/deepening阶段，高共情需求时）
-    if (empathy.deepEmpathy && tone.empathy >= 0.85 && Math.random() < 0.5) {
+    if (empathy.deepEmpathy && tone.empathy >= 0.85 && deterministicChance(msg + '_deepEmpathy', 0.5)) {
       finalResponse += '\n\n' + empathy.deepEmpathy;
     }
     
@@ -1536,7 +1565,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
     } catch (e) {
       console.error('matchSchool错误:', e);
     }
-    if (schoolMatch && Math.random() < 0.6) {
+    if (schoolMatch && deterministicChance(msg + '_schoolInsight', 0.6)) {
       try {
         const insight = getSchoolInsight(schoolMatch.school);
         if (insight) {
@@ -1547,7 +1576,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
       }
     }
     // 名言增强（提高概率到35%）
-    if (schoolMatch && Math.random() < 0.35) {
+    if (schoolMatch && deterministicChance(msg + '_quote', 0.35)) {
       try {
         const quote = getRelevantQuote(schoolMatch.quoteScenarios);
         if (quote) {
@@ -1558,7 +1587,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
       }
     }
     // 文章增强（提高概率到50%）
-    if (articleMatch && Math.random() < 0.5) {
+    if (articleMatch && deterministicChance(msg + '_articleEnhance', 0.5)) {
       try {
         const articleEnhancement = getArticleEnhancement(articleMatch);
         if (articleEnhancement) {
@@ -1570,7 +1599,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
     }
     
     // 主动追问（基于策略：开放式阶段更可能追问）
-    if (strategy.openRatio >= 0.5 && Math.random() < 0.5) {
+    if (strategy.openRatio >= 0.5 && deterministicChance(msg + '_followUp1', 0.5)) {
       try {
         const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
         finalResponse += '\n\n' + followUp;
@@ -1580,7 +1609,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
     }
     
     // 行动引导（supporting阶段或情绪好转时，提高概率到50%）
-    if (empathy.actionGuidance && tone.guidance >= 0.6 && Math.random() < 0.5) {
+    if (empathy.actionGuidance && tone.guidance >= 0.6 && deterministicChance(msg + '_actionGuidance', 0.5)) {
       finalResponse += '\n\n' + empathy.actionGuidance;
     }
     
@@ -1588,7 +1617,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
   }
 
   // ===== 优先级5: 文章suggestedResponse（提高概率到55%） =====
-  if (articleMatch && Math.random() < 0.55) {
+  if (articleMatch && deterministicChance(msg + '_articleFull', 0.55)) {
     try {
       const articleResponse = getArticleFullResponse(articleMatch);
       if (articleResponse) {
@@ -1629,14 +1658,14 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
     // 流派/文章增强（上下文回复也需要知识库支持）
     let schoolMatch6 = null;
     try { schoolMatch6 = matchSchool(userMessage); } catch (e) { /* ignore */ }
-    if (articleMatch && Math.random() < 0.4) {
+    if (articleMatch && deterministicChance(msg + '_ctxArticle', 0.4)) {
       try {
         const articleEnhancement = getArticleEnhancement(articleMatch);
         if (articleEnhancement) {
           finalResponse += '\n\n' + articleEnhancement;
         }
       } catch (e) { /* ignore */ }
-    } else if (schoolMatch6 && Math.random() < 0.5) {
+    } else if (schoolMatch6 && deterministicChance(msg + '_ctxSchool', 0.5)) {
       try {
         const insight = getSchoolInsight(schoolMatch6.school);
         if (insight) {
@@ -1646,7 +1675,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
     }
     
     // 策略性追问
-    if (strategy.openRatio >= 0.5 && Math.random() < 0.4) {
+    if (strategy.openRatio >= 0.5 && deterministicChance(msg + '_ctxFollowUp', 0.4)) {
       try {
         const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
         finalResponse += '\n\n' + followUp;
@@ -1664,7 +1693,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
       '谢谢你的回应。能告诉我更多细节吗？',
       '我在。不用急，慢慢说。'
     ];
-    let response = shortReplies[Math.floor(Math.random() * shortReplies.length)];
+    let response = deterministicPick(shortReplies, msg + '_short');
     
     // 主动追问：基于当前话题
     if (currentTopic) {
@@ -1691,7 +1720,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
       `我听到了。你觉得这些感受背后，隐藏着什么样的需要？`,
       `你能说出这些，说明你在认真面对自己。这种感受是什么时候开始的？`
     ];
-    generalBase = deepReplies[Math.floor(Math.random() * deepReplies.length)];
+    generalBase = deterministicPick(deepReplies, msg + '_deep');
   } else if (currentPhase === CONVERSATION_PHASES.SUPPORTING) {
     // 支持阶段：更多引导
     const supportReplies = [
@@ -1700,7 +1729,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
       `谢谢你告诉我。基于你说的，我想给你一个建议——`,
       `你的感受值得被认真对待。接下来我们可以一起找找解决办法。`
     ];
-    generalBase = supportReplies[Math.floor(Math.random() * supportReplies.length)];
+    generalBase = deterministicPick(supportReplies, msg + '_support');
   } else if (currentPhase === CONVERSATION_PHASES.CLOSING) {
     // 收尾阶段：温暖总结
     const closingReplies = [
@@ -1708,7 +1737,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
       `和你聊天很愉快。照顾好自己，有需要随时来找我 🤗`,
       `你今天的勇气——愿意表达和寻求支持——本身就是一种力量。保重 💚`
     ];
-    generalBase = closingReplies[Math.floor(Math.random() * closingReplies.length)];
+    generalBase = deterministicPick(closingReplies, msg + '_closing');
   } else {
     // 探索阶段：开放式引导（减少机械反问，增加自然回应）
     const echoReplies = [
@@ -1719,7 +1748,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
       `我听到了。你愿意多说一些吗？或者我们可以从你感兴趣的话题开始。`,
       `谢谢你信任我。如果不知道从何说起，也可以随便聊聊今天发生了什么。`
     ];
-    generalBase = echoReplies[Math.floor(Math.random() * echoReplies.length)];
+    generalBase = deterministicPick(echoReplies, msg + '_echo');
   }
   
   // 分层共情增强
@@ -1736,14 +1765,14 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
   // 流派/文章增强（提高概率，确保给到有用的建议）
   let schoolMatch8 = null;
   try { schoolMatch8 = matchSchool(userMessage); } catch (e) { /* ignore */ }
-  if (articleMatch && Math.random() < 0.5) {
+  if (articleMatch && deterministicChance(msg + '_articleEnhance', 0.5)) {
     try {
       const articleEnhancement = getArticleEnhancement(articleMatch);
       if (articleEnhancement) {
         generalBase += '\n\n' + articleEnhancement;
       }
     } catch (e) { /* ignore */ }
-  } else if (schoolMatch8 && Math.random() < 0.5) {
+  } else if (schoolMatch8 && deterministicChance(msg + '_genSchool2', 0.5)) {
     try {
       const insight = getSchoolInsight(schoolMatch8.school);
       if (insight) {
@@ -1753,7 +1782,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
   }
   
   // 主动追问
-  if (strategy.openRatio >= 0.5 && Math.random() < 0.4) {
+  if (strategy.openRatio >= 0.5 && deterministicChance(msg + '_ctxFollowUp', 0.4)) {
     try {
       const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
       generalBase += '\n\n' + followUp;
@@ -1761,7 +1790,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
   }
   
   // 行动引导（提高概率到45%）
-  if (empathy8.actionGuidance && tone.guidance >= 0.6 && Math.random() < 0.45) {
+  if (empathy8.actionGuidance && tone.guidance >= 0.6 && deterministicChance(msg + '_genAction', 0.45)) {
     generalBase += '\n\n' + empathy8.actionGuidance;
   }
   
@@ -1897,7 +1926,7 @@ function generateQuickReplies(aiMessage, currentTopic, mood) {
   
   // 如果已有3个以上特定回复，只加1个通用回复
   if (replies.length >= 3) {
-    replies.push(generalReplies[Math.floor(Math.random() * generalReplies.length)]);
+    replies.push(deterministicPick(generalReplies, msg + '_genReply'));
   } else {
     replies.push(...generalReplies.slice(0, 2));
   }
@@ -2081,7 +2110,7 @@ export default function Chat() {
   const handleMoodSelect = (selectedMood) => {
     setMood(selectedMood);
     const responses = moodResponses[selectedMood.level];
-    const aiReply = responses[Math.floor(Math.random() * responses.length)];
+    const aiReply = deterministicPick(responses, text + '_quickReply');
     
     // 个性化开场：如果之前有记忆，加入个性化问候
     const personalizedGreeting = getPersonalizedGreeting(userMemory);
@@ -2185,7 +2214,7 @@ export default function Chat() {
             setMessages(prev => [...prev, aiMsg]);
             setTypingMessageId(aiMsgId);
             setDisplayedText(isThinking ? '' : accumulatedText);
-            setIsTyping(false); // 隐藏"思考中"指示器
+            // 保持isTyping=true，让"思考中"指示器持续显示直到流式完成
           } else if (isThinking) {
             // 思考阶段，保持思考提示
             setMessages(prev => prev.map(m =>
@@ -2202,6 +2231,7 @@ export default function Chat() {
         },
         // onComplete: 流式完成
         (finalText) => {
+          setIsTyping(false); // 隐藏"思考中"指示器
           setTypingMessageId(null);
           setDisplayedText('');
           setMessages(prev => prev.map(m =>
@@ -2217,7 +2247,7 @@ export default function Chat() {
             const newCount = prev + 1;
             if (newCount % 3 === 0) {
               setTimeout(() => {
-                const tip = selfCareTips[Math.floor(Math.random() * selfCareTips.length)];
+                const tip = deterministicPick(selfCareTips, 'tip_' + tipCount);
                 setMessages(prev => [...prev, {
                   id: Date.now() + 2,
                   sender: 'tip',
@@ -2257,7 +2287,7 @@ export default function Chat() {
 
   // ===== 规则引擎兜底回复 =====
   const fallbackToRuleEngine = (text, newMessages, newPhase, topicResult, updatedMemory) => {
-    const delay = 800 + Math.random() * 1500;
+    const delay = 800 + (deterministicChance(text + '_delay', 0.5) ? 700 : 300); // 确定性延迟：800-1500ms → 800或1100ms
     setTimeout(() => {
       try {
         const conversationState = {
@@ -2303,7 +2333,7 @@ export default function Chat() {
         const fallbackMsg = {
           id: Date.now() + 1,
           sender: 'ai',
-          text: fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)],
+          text: deterministicPick(fallbackReplies, text + '_fallback'),
           time: formatTime(new Date())
         };
         setMessages(prev => [...prev, fallbackMsg]);
@@ -2316,7 +2346,7 @@ export default function Chat() {
         const newCount = prev + 1;
         if (newCount % 3 === 0) {
           setTimeout(() => {
-            const tip = selfCareTips[Math.floor(Math.random() * selfCareTips.length)];
+            const tip = deterministicPick(selfCareTips, 'tip_' + tipCount);
             setMessages(prev => [...prev, {
               id: Date.now() + 2,
               sender: 'tip',
@@ -2361,7 +2391,7 @@ export default function Chat() {
         const aiMsg = {
           id: Date.now(),
           sender: 'ai',
-          text: improveReplies[Math.floor(Math.random() * improveReplies.length)],
+          text: deterministicPick(improveReplies, 'improve_' + Date.now()),
           time: formatTime(new Date())
         };
         setMessages(prev => [...prev, aiMsg]);
@@ -2376,7 +2406,7 @@ export default function Chat() {
         const aiMsg = {
           id: Date.now(),
           sender: 'ai',
-          text: positiveReplies[Math.floor(Math.random() * positiveReplies.length)],
+          text: deterministicPick(positiveReplies, 'positive_' + Date.now()),
           time: formatTime(new Date())
         };
         setMessages(prev => [...prev, aiMsg]);

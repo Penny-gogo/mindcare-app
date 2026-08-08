@@ -5,7 +5,7 @@ import assessments, { keywordStressMap } from '../data/assessments';
 import './Assessment.css';
 
 export default function Assessment() {
-  const { user } = useAuth();
+  useAuth(); // 保持认证上下文连接
   const navigate = useNavigate();
   const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [currentStep, setCurrentStep] = useState(0); // 0=选择, 1=进行中, 2=结果
@@ -110,7 +110,7 @@ export default function Assessment() {
     const topTags = sortedTags.slice(0, 3).map(t => t[0]);
 
     // 根据标签组合生成结果
-    let moodType, moodDescription, moodAdvice, moodColor;
+    let moodType, moodDescription, moodAdvice;
     const hasNegative = topTags.some(t => ['压力', '疲惫', '孤独', '忧郁', '情绪化', '需要休息', '需要宣泄'].includes(t));
     const hasPositive = topTags.some(t => ['平静', '温暖', '希望', '活力', '自由', '轻松', '愉悦', '平衡', '满足', '幸福', '稳定', '积极', '乐观', '韧性', '舒适'].includes(t));
 
@@ -118,17 +118,17 @@ export default function Assessment() {
       moodType = '需要关注';
       moodDescription = '从你的选择来看，你目前可能正承受一些压力或情绪波动。这是正常的，但值得关注。';
       moodAdvice = '建议尝试和AI心灵伙伴聊聊，或者给自己安排一些放松的活动。';
-      moodColor = '#f59e0b';
+      
     } else if (hasPositive && !hasNegative) {
       moodType = '状态良好';
       moodDescription = '从你的选择来看，你目前的状态比较积极和平稳。继续保持这种好状态！';
       moodAdvice = '保持良好的生活节奏，也可以关注身边需要帮助的同事。';
-      moodColor = '#00b894';
+      
     } else {
       moodType = '需要平衡';
       moodDescription = '你的选择反映出一种复杂的状态——既有积极的面向，也有一些需要关注的信号。';
       moodAdvice = '试着找到压力和放松之间的平衡点，给自己更多关注。';
-      moodColor = '#4a6cf7';
+      
     }
 
     setResult({

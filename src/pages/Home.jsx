@@ -206,35 +206,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Crisis Hotline */}
-      <section className="crisis-section">
-        <div className="section-header">
-          <h2>如果你正经历困难时刻</h2>
-          <p>这些热线24小时为你守候，打一个电话就有人听你说</p>
-        </div>
-        <div className="crisis-grid">
-          <div className="crisis-card">
-            <div className="crisis-icon">📞</div>
-            <h3>全国心理援助热线</h3>
-            <p className="crisis-number">400-161-9995</p>
-            <span className="crisis-tag">24小时</span>
-          </div>
-          <div className="crisis-card">
-            <div className="crisis-icon">🏥</div>
-            <h3>北京回龙观医院</h3>
-            <p className="crisis-number">010-82951332</p>
-            <span className="crisis-tag">心理危机干预</span>
-          </div>
-          <div className="crisis-card">
-            <div className="crisis-icon">💛</div>
-            <h3>12355 青少年热线</h3>
-            <p className="crisis-number">12355</p>
-            <span className="crisis-tag">24小时</span>
-          </div>
-        </div>
-        <p className="crisis-note">如果你或身边的人正在经历心理危机，请立即拨打以上热线或前往最近的三甲医院精神科。</p>
-      </section>
-
       {/* CTA */}
       <section className="cta-section">
         <h2>给自己几分钟，和心里那个人聊聊</h2>

@@ -1,15 +1,38 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { streamAIResponse, AI_ENABLED } from '../api/aiService';
 import { retrieveKnowledgeContext } from '../api/knowledgeRetriever';
-import knowledgeBase from '../data/knowledge/index';
-import psychologySchools from '../data/knowledge/psychologySchools';
-import psychologistQuotes from '../data/knowledge/psychologistQuotes';
-import articleCollectionData from '../data/knowledge/articleCollection';
-import './Chat.css';
 
-const articleCollection = articleCollectionData;
+// 知识库数据改为按需动态加载，减少主包体积
+// psychologySchools, psychologistQuotes, articleCollection 在对应函数内懒加载
+
+// 懒加载缓存：首次使用时动态import，后续直接使用缓存
+let _psychologySchoolsCache = null;
+let _psychologistQuotesCache = null;
+let _articleCollectionCache = null;
+
+async function loadPsychologySchools() {
+  if (!_psychologySchoolsCache) {
+    _psychologySchoolsCache = (await import('../data/knowledge/psychologySchools')).default;
+  }
+  return _psychologySchoolsCache;
+}
+
+async function loadPsychologistQuotes() {
+  if (!_psychologistQuotesCache) {
+    _psychologistQuotesCache = (await import('../data/knowledge/psychologistQuotes')).default;
+  }
+  return _psychologistQuotesCache;
+}
+
+async function loadArticleCollection() {
+  if (!_articleCollectionCache) {
+    _articleCollectionCache = (await import('../data/knowledge/articleCollection')).default;
+  }
+  return _articleCollectionCache;
+}
+
+import './Chat.css';
 
 const DEFAULT_AI_NAME = '小暖';
 const AI_AVATAR = '🤗';
@@ -331,25 +354,6 @@ const basicPatterns = [
   }
 ];
 
-// 通用关怀回复（融入温暖话术模板）
-const generalResponses = [
-  '谢谢你的分享。能告诉我更多吗？我想更好地理解你的感受。',
-  '我听到了你说的话。这种感受是很真实的，你愿意继续说说吗？',
-  '你能够表达出这些，说明你对自己有很好的觉察。让我们一起来看看，有什么可以帮助你的。',
-  '每个人都有需要倾诉的时候，这很正常。我在这里，随时愿意听你说。',
-  '你的感受值得被认真对待。让我们一起探索，怎么让你感觉好一些。',
-  '谢谢你信任我，和我分享这些。你觉得现在最困扰你的是什么？',
-  '我理解这可能不容易说出口。不用急，按照你的节奏来就好。',
-  '你说的话我都记在心里了。不管是什么感受，在这里都是被允许的。',
-  '有时候生活确实会让人喘不过气。你不是一个人在面对，我在这里陪着你。',
-  // 增加更自然、更少"反问"的回应
-  '嗯，我在认真听。你想从哪儿开始聊都可以 💚',
-  '不管你想说什么，这里都是安全的。慢慢来。',
-  '有时候把想法说出来本身就是一种释放。你想继续聊聊吗？',
-  '我感觉到你可能有些话想说。不用有压力，按照你的节奏来就好。',
-  '谢谢你愿意打开这扇门。无论里面是什么，我都在这里。'
-];
-
 // 开场回复（根据心情，融入温暖话术模板）
 const moodResponses = {
   good: [
@@ -446,7 +450,7 @@ const schoolMatchingMap = {
 };
 
 // 根据用户消息匹配最相关的流派
-function matchSchool(userMessage) {
+async function matchSchool(userMessage) {
   const msg = userMessage.toLowerCase();
   let bestMatch = null;
   let maxScore = 0;
@@ -464,6 +468,7 @@ function matchSchool(userMessage) {
   const match = schoolMatchingMap[bestMatch];
   // 从匹配到的流派中随机选一个
   const schoolKey = deterministicPick(match.schools, msg);
+  const psychologySchools = await loadPsychologySchools();
   const school = psychologySchools[schoolKey];
 
   return { category: bestMatch, schoolKey, school, quoteScenarios: match.quoteScenarios };
@@ -506,13 +511,14 @@ function getSchoolInsight(school) {
 }
 
 // 根据场景匹配心理学家名言
-function getRelevantQuote(scenarios) {
+async function getRelevantQuote(scenarios, msg) {
   if (!scenarios || scenarios.length === 0) return null;
 
   const targetScenario = deterministicPick(scenarios, msg + '_scenario');
   const allQuotes = [];
 
   // 遍历所有心理学家，收集匹配场景的名言
+  const psychologistQuotes = await loadPsychologistQuotes();
   for (const psychologist of Object.values(psychologistQuotes)) {
     if (psychologist.quotes) {
       for (const q of psychologist.quotes) {
@@ -558,7 +564,7 @@ const articleCategoryMap = {
 };
 
 // 根据用户消息匹配最相关的文章分类和文章
-function matchArticle(userMessage) {
+async function matchArticle(userMessage) {
   const msg = userMessage.toLowerCase();
   let bestCategory = null;
   let maxScore = 0;
@@ -571,6 +577,7 @@ function matchArticle(userMessage) {
     }
   }
 
+  const articleCollection = await loadArticleCollection();
   if (!bestCategory || !articleCollection.categories[bestCategory]) return null;
 
   const category = articleCollection.categories[bestCategory];
@@ -584,28 +591,29 @@ function matchArticle(userMessage) {
 }
 
 // 从文章数据中提取增强内容，构建回复片段
-function getArticleEnhancement(articleMatch) {
+function getArticleEnhancement(articleMatch, userMessage) {
   if (!articleMatch) return null;
 
   const { article } = articleMatch;
   const parts = [];
+  const seed = (userMessage || '').toLowerCase();
 
   // 提取核心洞察（选1条）
   if (article.coreInsights?.length) {
-    const insight = deterministicPick(article.coreInsights, msg + '_coreInsight');
+    const insight = deterministicPick(article.coreInsights, seed + '_coreInsight');
     parts.push(`📚 研究发现：${insight.insight}（${insight.evidence}）`);
   }
 
   // 提取实操建议（选1条）
   if (article.practicalTips?.length) {
-    const tip = deterministicPick(article.practicalTips, msg + '_tip');
+    const tip = deterministicPick(article.practicalTips, seed + '_tip');
     const stepsText = tip.steps.slice(0, 3).join('→');
     parts.push(`💡 【${tip.tip}】${stepsText}${tip.steps.length > 3 ? '→...' : ''}`);
   }
 
   // 提取温暖话术（选1条，50%概率）
-  if (article.warmPhrases?.length && deterministicChance(msg + '_warm', 0.5)) {
-    const warm = deterministicPick(article.warmPhrases, msg + '_warm');
+  if (article.warmPhrases?.length && deterministicChance(seed + '_warm', 0.5)) {
+    const warm = deterministicPick(article.warmPhrases, seed + '_warm');
     parts.push(`💚 ${warm.phrase}`);
   }
 
@@ -657,38 +665,6 @@ function determineConversationPhase(messageCount, messages, currentPhase) {
   if (messageCount >= 4) return CONVERSATION_PHASES.EXPLORING;
   
   return currentPhase || CONVERSATION_PHASES.EXPLORING;
-}
-
-// 根据对话阶段生成阶段感知的引导语
-function getPhaseGuidance(phase, userMessage) {
-  const guidanceMap = {
-    [CONVERSATION_PHASES.GREETING]: {
-      prefix: '',
-      suffix: '',
-      style: 'warm_welcome'  // 温暖欢迎
-    },
-    [CONVERSATION_PHASES.EXPLORING]: {
-      prefix: '',
-      suffix: '\n\n你能多说说吗？我想更了解你的感受。',
-      style: 'open_exploring'  // 开放式探索
-    },
-    [CONVERSATION_PHASES.DEEPENING]: {
-      prefix: '',
-      suffix: '',
-      style: 'deep_empathy'  // 深度共情
-    },
-    [CONVERSATION_PHASES.SUPPORTING]: {
-      prefix: '',
-      suffix: '',
-      style: 'structured_guide'  // 结构化引导
-    },
-    [CONVERSATION_PHASES.CLOSING]: {
-      prefix: '',
-      suffix: '',
-      style: 'warm_closing'  // 温暖收尾
-    }
-  };
-  return guidanceMap[phase] || guidanceMap[CONVERSATION_PHASES.EXPLORING];
 }
 
 // ===== 2. 情感追踪系统 =====
@@ -1087,32 +1063,12 @@ function detectTopicSwitch(messages, currentTopic) {
   return { switched: hasSwitchSignal || true, newTopic, oldTopic: currentTopic };
 }
 
-// 生成话题切换的过渡话术
-function getTopicTransition(oldTopic, newTopic) {
-  const topicNames = {
-    work_stress: '工作方面',
-    emotion: '情绪方面',
-    sleep: '睡眠问题',
-    relationship: '感情方面',
-    family: '家庭方面',
-    self_worth: '自我价值感',
-    meaning: '人生方向',
-    habit: '习惯改变'
-  };
-  
-  const transitions = [
-    `好的，我们聊聊${topicNames[newTopic] || '这个'}。`,
-    `嗯，${topicNames[newTopic] || '这个话题'}也很重要。`,
-    `我理解，${topicNames[newTopic] || '这方面'}的困扰确实需要关注。`,
-  ];
-  return deterministicPick(transitions, msg + '_transition');
-}
+
 
 // ===== 5. 主动追问策略 =====
 // 基于豆包式的主动追问，让对话更深入
 function generateFollowUpQuestion(userMessage, conversationHistory, currentTopic) {
   const msg = userMessage.toLowerCase();
-  const userMsgs = (conversationHistory || []).filter(m => m && m.sender === 'user' && m.text);
   const aiMsgs = (conversationHistory || []).filter(m => m && m.sender === 'ai' && m.text);
   
   // 如果用户只说了很短的话，鼓励展开
@@ -1343,7 +1299,7 @@ function detectConversationDrift(messages) {
 }
 
 // 生成修复回复
-function generateDriftRepair(driftType, currentTopic) {
+function generateDriftRepair(driftType, _currentTopic) {
   if (driftType === 'short_responses') {
     const repairs = [
       '嗯，我注意到你好像不太想多说。没关系的，你可以按照自己的节奏来。\n\n如果你愿意，可以试试点击下面的快捷话题，选一个你感兴趣的聊聊？或者只是告诉我你现在的心情也好。',
@@ -1460,7 +1416,7 @@ function generateContextualResponse(userMessage, conversationHistory) {
   return null;
 }
 
-function getAIResponse(userMessage, mood, messageCount, conversationHistory, conversationState) {
+async function getAIResponse(userMessage, mood, messageCount, conversationHistory, conversationState) {
   const msg = (userMessage || '').toLowerCase();
   
   // ===== 获取对话状态（由组件传入），每个独立try-catch防止级联崩溃 =====
@@ -1520,7 +1476,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
   // ===== 优先级3: 文章智能匹配 =====
   let articleMatch = null;
   try {
-    articleMatch = matchArticle(userMessage);
+    articleMatch = await matchArticle(userMessage);
   } catch (e) {
     console.error('matchArticle错误:', e);
   }
@@ -1561,7 +1517,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
     // 流派智能增强（提高概率到60%）
     let schoolMatch = null;
     try {
-      schoolMatch = matchSchool(userMessage);
+      schoolMatch = await matchSchool(userMessage);
     } catch (e) {
       console.error('matchSchool错误:', e);
     }
@@ -1578,7 +1534,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
     // 名言增强（提高概率到35%）
     if (schoolMatch && deterministicChance(msg + '_quote', 0.35)) {
       try {
-        const quote = getRelevantQuote(schoolMatch.quoteScenarios);
+        const quote = await getRelevantQuote(schoolMatch.quoteScenarios, msg);
         if (quote) {
           finalResponse += '\n\n' + quote;
         }
@@ -1589,7 +1545,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
     // 文章增强（提高概率到50%）
     if (articleMatch && deterministicChance(msg + '_articleEnhance', 0.5)) {
       try {
-        const articleEnhancement = getArticleEnhancement(articleMatch);
+        const articleEnhancement = getArticleEnhancement(articleMatch, userMessage);
         if (articleEnhancement) {
           finalResponse += '\n\n' + articleEnhancement;
         }
@@ -1626,7 +1582,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
           try {
             const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
             return articleResponse + '\n\n' + followUp;
-          } catch (e) {
+          } catch {
             return articleResponse;
           }
         }
@@ -1652,26 +1608,26 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
       try {
         const empathy = generateShallowEmpathy(msg, emotionState.current);
         finalResponse = empathy + '\n\n' + finalResponse;
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
     }
     
     // 流派/文章增强（上下文回复也需要知识库支持）
     let schoolMatch6 = null;
-    try { schoolMatch6 = matchSchool(userMessage); } catch (e) { /* ignore */ }
+    try { schoolMatch6 = await matchSchool(userMessage); } catch { /* ignore */ }
     if (articleMatch && deterministicChance(msg + '_ctxArticle', 0.4)) {
       try {
-        const articleEnhancement = getArticleEnhancement(articleMatch);
+        const articleEnhancement = getArticleEnhancement(articleMatch, userMessage);
         if (articleEnhancement) {
           finalResponse += '\n\n' + articleEnhancement;
         }
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
     } else if (schoolMatch6 && deterministicChance(msg + '_ctxSchool', 0.5)) {
       try {
         const insight = getSchoolInsight(schoolMatch6.school);
         if (insight) {
           finalResponse += '\n\n' + insight;
         }
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
     }
     
     // 策略性追问
@@ -1679,7 +1635,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
       try {
         const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
         finalResponse += '\n\n' + followUp;
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
     }
     
     return finalResponse;
@@ -1700,14 +1656,14 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
       try {
         const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
         response += '\n\n' + followUp;
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
     }
     
     return response;
   }
 
   // ===== 优先级8: 通用回复+多层增强 =====
-  const userWords = msg.replace(/[，。！？、；：""''（）\[\]{}.,!?;:'"()\s]/g, '').slice(0, 20);
+  const userWords = msg.replace(/[，。！？、；：""''（）[\]{}.,!?;:'"()\s]/g, '').slice(0, 20);
   
   // 基于对话阶段和策略选择不同的通用回复风格
   let generalBase;
@@ -1764,21 +1720,21 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
   
   // 流派/文章增强（提高概率，确保给到有用的建议）
   let schoolMatch8 = null;
-  try { schoolMatch8 = matchSchool(userMessage); } catch (e) { /* ignore */ }
+  try { schoolMatch8 = await matchSchool(userMessage); } catch { /* ignore */ }
   if (articleMatch && deterministicChance(msg + '_articleEnhance', 0.5)) {
     try {
-      const articleEnhancement = getArticleEnhancement(articleMatch);
+      const articleEnhancement = getArticleEnhancement(articleMatch, userMessage);
       if (articleEnhancement) {
         generalBase += '\n\n' + articleEnhancement;
       }
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
   } else if (schoolMatch8 && deterministicChance(msg + '_genSchool2', 0.5)) {
     try {
       const insight = getSchoolInsight(schoolMatch8.school);
       if (insight) {
         generalBase += '\n\n' + insight;
       }
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
   }
   
   // 主动追问
@@ -1786,7 +1742,7 @@ function getAIResponse(userMessage, mood, messageCount, conversationHistory, con
     try {
       const followUp = generateFollowUpQuestion(userMessage, conversationHistory, currentTopic);
       generalBase += '\n\n' + followUp;
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
   }
   
   // 行动引导（提高概率到45%）
@@ -1860,78 +1816,48 @@ function renderMarkdown(text) {
 }
 
 // ===== 智能快捷回复生成 =====
-function generateQuickReplies(aiMessage, currentTopic, mood) {
-  const replies = [];
-  const msg = aiMessage.toLowerCase();
-  
-  // 基于AI消息中的问题生成回复
-  if (msg.includes('能说说') || msg.includes('告诉我更多') || msg.includes('展开说说')) {
-    replies.push({ text: '让我想想怎么表达...', type: 'bridge' });
+const INITIAL_QUICK_REPLIES = [
+  { text: '给我一个建议', type: 'tip' },
+  { text: '我想继续聊聊这个话题', type: 'continue' },
+  { text: '你的理解有误我来更正', type: 'correct' }
+];
+
+function generateQuickReplies(aiMessage, currentTopic, userMessage = '') {
+  const context = `${userMessage} ${aiMessage}`.toLowerCase();
+
+  const topicGuidance = {
+    work_stress: '帮我梳理一个可行的下一步',
+    emotion: '教我一个安定情绪的小练习',
+    sleep: '给我一个今晚可以尝试的方法',
+    relationship: '帮我想一种更温和的沟通方式',
+    self_worth: '帮我看见自己已经做到的部分'
+  };
+
+  let contextualSuggestion = topicGuidance[currentTopic];
+
+  // 结合本轮对话内容细化建议，避免只按固定话题展示。
+  if (/优先级|任务|忙|加班|工作/.test(context)) {
+    contextualSuggestion = '帮我把眼前的事情理出优先级';
+  } else if (/睡眠|失眠|入睡|半夜|早醒/.test(context)) {
+    contextualSuggestion = '给我一个今晚可以尝试的放松方法';
+  } else if (/沟通|关系|同事|家人|伴侣|朋友/.test(context)) {
+    contextualSuggestion = '帮我想一种更温和的表达方式';
+  } else if (/焦虑|紧张|难过|情绪|烦躁|压力/.test(context)) {
+    contextualSuggestion = '带我做一个简单的情绪调节练习';
+  } else if (/自信|评价|完美|不够好|自责/.test(context)) {
+    contextualSuggestion = '帮我换一个更支持自己的角度';
   }
-  if (msg.includes('什么时候开始') || msg.includes('持续多久')) {
-    replies.push({ text: '大概有一段时间了', type: 'time' });
-    replies.push({ text: '最近才开始的', type: 'time' });
-  }
-  if (msg.includes('尝试过') || msg.includes('做过什么')) {
-    replies.push({ text: '试过一些方法', type: 'coping' });
-    replies.push({ text: '还没尝试过', type: 'coping' });
-  }
-  if (msg.includes('最困扰') || msg.includes('最让你')) {
-    replies.push({ text: '最困扰的是情绪方面', type: 'focus' });
-    replies.push({ text: '最困扰的是工作方面', type: 'focus' });
-  }
-  
-  // 基于话题的快捷回复
-  if (currentTopic) {
-    const topicReplies = {
-      work_stress: [
-        { text: '工作量太大了', type: 'detail' },
-        { text: '和领导关系紧张', type: 'detail' },
-        { text: '对未来很迷茫', type: 'detail' }
-      ],
-      emotion: [
-        { text: '情绪波动很大', type: 'detail' },
-        { text: '总是感到焦虑', type: 'detail' },
-        { text: '提不起精神', type: 'detail' }
-      ],
-      sleep: [
-        { text: '入睡困难', type: 'detail' },
-        { text: '半夜经常醒', type: 'detail' },
-        { text: '早上醒太早', type: 'detail' }
-      ],
-      relationship: [
-        { text: '沟通总是吵架', type: 'detail' },
-        { text: '感觉不被理解', type: 'detail' },
-        { text: '不知道该不该继续', type: 'detail' }
-      ],
-      self_worth: [
-        { text: '总觉得自己不够好', type: 'detail' },
-        { text: '害怕被评价', type: 'detail' },
-        { text: '追求完美到很累', type: 'detail' }
-      ]
-    };
-    
-    if (topicReplies[currentTopic]) {
-      const available = topicReplies[currentTopic].filter(r => !replies.some(er => er.type === r.type));
-      replies.push(...available.slice(0, 2));
-    }
-  }
-  
-  // 通用快捷回复（始终提供）
-  const generalReplies = [
-    { text: '我想聊聊别的', type: 'switch' },
-    { text: '给我一个小建议', type: 'tip' },
-    { text: '谢谢，我感觉好些了', type: 'positive' }
+
+  // AI正在邀请补充信息时，优先给出自然承接当前话题的入口。
+  const continueText = /能说说|告诉我更多|展开说说|愿意.*说|具体/.test(context)
+    ? '我愿意再补充一些具体情况'
+    : '我想继续聊聊这个话题';
+
+  return [
+    { text: contextualSuggestion || '给我一个适合现在的小建议', type: 'tip' },
+    { text: continueText, type: 'continue' },
+    { text: '你的理解有误我来更正', type: 'correct' }
   ];
-  
-  // 如果已有3个以上特定回复，只加1个通用回复
-  if (replies.length >= 3) {
-    replies.push(deterministicPick(generalReplies, msg + '_genReply'));
-  } else {
-    replies.push(...generalReplies.slice(0, 2));
-  }
-  
-  return replies.slice(0, 4); // 最多显示4个
 }
 
 // ===== 对话摘要生成 =====
@@ -1961,14 +1887,11 @@ function generateSessionSummary(messages) {
     }
   }
   
-  // 提取用户情绪
-  const moodEmojis = messages.filter(m => m.sender === 'user').slice(0, 1);
-  
   return {
     messageCount: userMsgs.length,
     topics: topics.slice(0, 3),
     lastMessage: userMsgs[userMsgs.length - 1]?.text?.slice(0, 30) + (userMsgs[userMsgs.length - 1]?.text?.length > 30 ? '...' : ''),
-    firstMood: messages[0]?.text?.match(/[😊😌😔😰😤😴]/)?.[0] || null
+    firstMood: messages[0]?.text?.match(/[😊😌😔😰😤😴]/u)?.[0] || null
   };
 }
 
@@ -1978,7 +1901,6 @@ function formatTime(date) {
 
 export default function Chat() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   
   // ===== 检测是否有保存的对话 =====
   const savedSession = loadChatSession();
@@ -2049,8 +1971,14 @@ export default function Chat() {
     setNameInput('');
   };
 
+  const autoScrollToBottom = (behavior = 'smooth') => {
+    const container = chatMessagesRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior });
+  };
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    autoScrollToBottom();
   }, [messages, isTyping]);
 
   // ===== 自动保存对话历史 =====
@@ -2089,7 +2017,7 @@ export default function Chat() {
     setMessages(prev => [...prev, aiMsg]);
     // 滚动到底部
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      autoScrollToBottom();
     }, 100);
   };
 
@@ -2133,13 +2061,14 @@ export default function Chat() {
       }
     ]);
     setShowTopics(true);
+    setQuickReplies(INITIAL_QUICK_REPLIES);
   };
 
   const handleTopicClick = (topic) => {
     handleSend(topic.text);
   };
 
-  const handleSend = (customInput) => {
+  const handleSend = async (customInput) => {
     const text = (customInput || input).trim();
     if (!text) return;
 
@@ -2238,7 +2167,7 @@ export default function Chat() {
             m.id === aiMsgId ? { ...m, text: finalText, isTyping: false } : m
           ));
           // 生成智能快捷回复
-          const replies = generateQuickReplies(finalText, topicResult.newTopic || currentTopic, mood);
+          const replies = generateQuickReplies(finalText, topicResult.newTopic || currentTopic, text);
           setQuickReplies(replies);
           abortControllerRef.current = null;
 
@@ -2261,19 +2190,6 @@ export default function Chat() {
         },
         // onError: 降级到规则引擎
         (error) => {
-          if (error.code === 'DAILY_QUOTA_EXCEEDED') {
-            setIsTyping(false);
-            setMessages(prev => [...prev, {
-              id: Date.now() + 1,
-              sender: 'ai',
-              text: error.message,
-              time: formatTime(new Date())
-            }]);
-            if (error.requiresLogin) {
-              setQuickReplies([{ text: '登录解锁更多对话', action: () => navigate('/login') }]);
-            }
-            return;
-          }
           console.warn('AI流式回复失败，降级到规则引擎:', error.message);
           setIsTyping(true); // 重新显示"思考中"
           fallbackToRuleEngine(text, newMessages, newPhase, topicResult, updatedMemory);
@@ -2288,14 +2204,14 @@ export default function Chat() {
   // ===== 规则引擎兜底回复 =====
   const fallbackToRuleEngine = (text, newMessages, newPhase, topicResult, updatedMemory) => {
     const delay = 800 + (deterministicChance(text + '_delay', 0.5) ? 700 : 300); // 确定性延迟：800-1500ms → 800或1100ms
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         const conversationState = {
           phase: newPhase,
           topic: topicResult.newTopic || currentTopic,
           memory: updatedMemory
         };
-        const aiText = getAIResponse(text, mood, newMessages.length, newMessages, conversationState);
+        const aiText = await getAIResponse(text, mood, newMessages.length, newMessages, conversationState);
         const aiMsgId = Date.now() + 1;
         const aiMsg = {
           id: aiMsgId,
@@ -2317,7 +2233,7 @@ export default function Chat() {
             setMessages(prev => prev.map(m =>
               m.id === aiMsgId ? { ...m, isTyping: false } : m
             ));
-            const replies = generateQuickReplies(aiMsg.text, topicResult.newTopic || currentTopic, mood);
+            const replies = generateQuickReplies(aiMsg.text, topicResult.newTopic || currentTopic, text);
             setQuickReplies(replies);
           },
           typingTimerRef
@@ -2337,7 +2253,7 @@ export default function Chat() {
           time: formatTime(new Date())
         };
         setMessages(prev => [...prev, fallbackMsg]);
-        setQuickReplies([{ text: '让我想想...', type: 'bridge' }, { text: '谢谢', type: 'positive' }]);
+        setQuickReplies(generateQuickReplies(fallbackMsg.text, topicResult.newTopic || currentTopic, text));
       }
       setIsTyping(false);
 
@@ -2423,7 +2339,7 @@ export default function Chat() {
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    autoScrollToBottom();
   };
 
   // ===== 输入框自适应高度 =====
@@ -2609,7 +2525,7 @@ export default function Chat() {
         {messages.map(msg => {
           // 打字机效果：正在打字的消息显示逐字内容
           const isCurrentlyTyping = msg.id === typingMessageId;
-          const displayText = isCurrentlyTyping ? displayedText : msg.text;
+          const displayText = isCurrentlyTyping ? (displayedText || msg.text) : msg.text;
           
           // 消息类型检测
           const isCrisisMsg = msg.sender === 'ai' && msg.text && crisisKeywords.some(kw => msg.text.includes(kw));
@@ -2649,12 +2565,15 @@ export default function Chat() {
             </div>
           );
         })}
-        {isTyping && (
+        {isTyping && !typingMessageId && (
           <div className="message ai">
             <span className="msg-ai-avatar">{AI_AVATAR}</span>
             <div className="msg-content">
-              <div className="msg-bubble typing">
-                <span></span><span></span><span></span>
+              <div className="msg-bubble thinking">
+                <span className="thinking-text">思考中</span>
+                <span className="thinking-dots" aria-hidden="true">
+                  <span></span><span></span><span></span>
+                </span>
               </div>
             </div>
           </div>

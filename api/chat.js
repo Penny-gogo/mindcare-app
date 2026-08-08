@@ -7,7 +7,7 @@
  * 环境变量：DEEPSEEK_API_KEY=sk-your-key
  */
 
-import { createHmac } from 'node:crypto';
+// import { createHmac } from 'node:crypto'; // 每日额度已移除，暂不使用
 import { createClient } from '@supabase/supabase-js';
 
 // ===== 限流配置 =====
@@ -15,7 +15,8 @@ const RATE_LIMIT = {
   maxRequests: 20,
   windowMs: 60 * 1000,
 };
-const DAILY_QUOTA = { guest: 5, authenticated: 20 };
+// 对话次数限制已移除，以下常量保留供后续恢复使用
+// const DAILY_QUOTA = { guest: Infinity, authenticated: Infinity };
 
 // 分钟级限流仅作突发流量防护；每日额度由 Supabase 持久化。
 const requestStore = new Map();
@@ -51,28 +52,20 @@ function createSupabaseAdmin() {
   });
 }
 
-async function resolveIdentity(req, supabase, clientIp) {
-  const authorization = req.headers.authorization || '';
-  const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : null;
-  if (token) {
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data.user) throw new Error('INVALID_AUTH_TOKEN');
-    return { key: `user:${data.user.id}`, limit: DAILY_QUOTA.authenticated };
-  }
-
-  const secret = process.env.QUOTA_HASH_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const digest = createHmac('sha256', secret).update(String(clientIp)).digest('hex');
-  return { key: `guest:${digest}`, limit: DAILY_QUOTA.guest };
-}
-
-async function consumeDailyQuota(supabase, identity) {
-  const { data, error } = await supabase.rpc('consume_daily_ai_quota', {
-    p_identity_key: identity.key,
-    p_daily_limit: identity.limit,
-  });
-  if (error) throw error;
-  return Array.isArray(data) ? data[0] : data;
-}
+// 每日额度已移除，此函数暂时不使用
+// async function resolveIdentity(req, supabase, clientIp) {
+//   const authorization = req.headers.authorization || '';
+//   const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : null;
+//   if (token) {
+//     const { data, error } = await supabase.auth.getUser(token);
+//     if (error || !data.user) throw new Error('INVALID_AUTH_TOKEN');
+//     return { key: `user:${data.user.id}`, limit: DAILY_QUOTA.authenticated };
+//   }
+//
+//   const secret = process.env.QUOTA_HASH_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+//   const digest = createHmac('sha256', secret).update(String(clientIp)).digest('hex');
+//   return { key: `guest:${digest}`, limit: DAILY_QUOTA.guest };
+// }
 
 // ===== 内容安全审核 =====
 const UNSAFE_PATTERNS = [
@@ -164,18 +157,20 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: '额度服务配置错误，请稍后重试' });
   }
 
-  let identity;
-  try {
-    identity = await resolveIdentity(req, supabase, clientIp);
-  } catch (error) {
-    if (error.message === 'INVALID_AUTH_TOKEN') {
-      return res.status(401).json({ error: '登录状态已失效，请重新登录' });
-    }
-    console.error('Identity service error:', error);
-    return res.status(503).json({ error: '身份服务暂不可用，请稍后重试' });
-  }
+  // 每日额度已移除，跳过身份解析
+  // 如需恢复，取消下面注释即可
+  // let identity;
+  // try {
+  //   identity = await resolveIdentity(req, supabase, clientIp);
+  // } catch (error) {
+  //   if (error.message === 'INVALID_AUTH_TOKEN') {
+  //     return res.status(401).json({ error: '登录状态已失效，请重新登录' });
+  //   }
+  //   console.error('Identity service error:', error);
+  //   return res.status(503).json({ error: '身份服务暂不可用，请稍后重试' });
+  // }
 
-  // 验证API Key和请求格式后再消费每日额度，避免无效请求扣减额度。
+  // 验证API Key和请求格式
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: '服务配置错误，请稍后重试' });
@@ -197,20 +192,22 @@ export default async function handler(req, res) {
     });
   }
 
-  try {
-    const dailyResult = await consumeDailyQuota(supabase, identity);
-    res.setHeader('X-DailyLimit-Remaining', dailyResult?.remaining ?? 0);
-    if (!dailyResult?.allowed) {
-      return res.status(429).json({
-        error: '今日AI对话额度已用完，请明天再试',
-        code: 'DAILY_QUOTA_EXCEEDED',
-        requiresLogin: identity.key.startsWith('guest:'),
-      });
-    }
-  } catch (error) {
-    console.error('Quota service error:', error);
-    return res.status(503).json({ error: '额度服务暂不可用，请稍后重试' });
-  }
+  // 每日额度检查已移除，跳过 Supabase RPC 调用
+  // 如需恢复，取消下面注释即可
+  // try {
+  //   const dailyResult = await consumeDailyQuota(supabase, identity);
+  //   res.setHeader('X-DailyLimit-Remaining', dailyResult?.remaining ?? 0);
+  //   if (!dailyResult?.allowed) {
+  //     return res.status(429).json({
+  //       error: '今日AI对话额度已用完，请明天明天再试',
+  //       code: 'DAILY_QUOTA_EXCEEDED',
+  //       requiresLogin: identity.key.startsWith('guest:'),
+  //     });
+  //   }
+  // } catch (error) {
+  //   console.error('Quota service error:', error);
+  //   return res.status(503).json({ error: '额度服务暂不可用，请稍后重试' });
+  // }
 
   try {
 

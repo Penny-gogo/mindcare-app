@@ -149,7 +149,6 @@ function extractQueryKeywords(message) {
  */
 function searchByTopicMapping(message) {
   const relevantModules = new Set();
-  const relevantChunks = [];
 
   for (const [pattern, modules] of Object.entries(TOPIC_MODULE_MAP)) {
     const keywords = pattern.split('|');

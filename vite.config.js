@@ -1,14 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// 修复GitHub Pages部署的HTML插件
+// GitHub Pages 需要兼容经典脚本；Vercel 使用 Vite 默认 ESM 输出
+const isGithubPagesBuild = (process.env.VITE_BASE || '/mindcare-app/') !== '/'
+
+// 修复 GitHub Pages 部署的 HTML
 function fixGithubPagesPlugin() {
   return {
     name: 'fix-github-pages',
     transformIndexHtml(html) {
-      // 1. 移除crossorigin属性（同源部署不需要CORS）
       html = html.replace(/\s+crossorigin(?=\s|>)/g, '')
-      // 2. 将 type="module" 改为 defer script（IIFE格式不需要module，defer确保DOM就绪）
       html = html.replace(/<script(\s+)type="module"(\s+)src=/g, '<script defer$1src=')
       return html
     }
@@ -17,19 +18,23 @@ function fixGithubPagesPlugin() {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), fixGithubPagesPlugin()],
-  base: process.env.VITE_BASE || '/mindcare-app/',  // GitHub Pages: 仓库名; Vercel: 设VITE_BASE=/
+  plugins: [react(), ...(isGithubPagesBuild ? [fixGithubPagesPlugin()] : [])],
+  base: process.env.VITE_BASE || '/mindcare-app/',
   build: {
     rollupOptions: {
-      output: {
-        // 使用IIFE格式替代ES模块，绕过GitHub Pages的模块加载限制
-        // IIFE作为经典<script>加载，不需要CORS检查和JavaScript MIME类型
-        format: 'iife',
-        name: 'MindCareApp',
-        entryFileNames: 'assets/index.js',
-        chunkFileNames: 'assets/[name].js',
-        assetFileNames: 'assets/[name].[ext]',
-      }
+      output: isGithubPagesBuild
+        ? {
+            format: 'iife',
+            name: 'MindCareApp',
+            entryFileNames: 'assets/index.js',
+            chunkFileNames: 'assets/[name].js',
+            assetFileNames: 'assets/[name].[ext]',
+          }
+        : {
+            entryFileNames: 'assets/index-[hash].js',
+            chunkFileNames: 'assets/[name]-[hash].js',
+            assetFileNames: 'assets/[name]-[hash].[ext]',
+          }
     }
   },
   server: {

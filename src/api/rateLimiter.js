@@ -8,12 +8,11 @@ const BUCKET_CONFIG = {
   refillInterval: 6000,
 };
 
+// 对话次数限制已移除，保留常量定义供服务端使用
 export const DAILY_QUOTA = {
-  guest: 5,
-  authenticated: 20,
+  guest: Infinity,
+  authenticated: Infinity,
 };
-
-const DAILY_USAGE_KEY = 'mindcare_daily_ai_usage';
 
 let tokens = BUCKET_CONFIG.maxTokens;
 let lastRefillTime = Date.now();
@@ -23,36 +22,6 @@ const sessionStats = {
   totalTokensUsed: 0,
   startTime: Date.now(),
 };
-
-function getLocalDateKey() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function getIdentity(user) {
-  return user?.id ? `user:${user.id}` : 'guest';
-}
-
-function getDailyLimit(user) {
-  return user?.id ? DAILY_QUOTA.authenticated : DAILY_QUOTA.guest;
-}
-
-function loadDailyUsage() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(DAILY_USAGE_KEY) || '{}');
-    if (saved.date === getLocalDateKey() && saved.usage) return saved;
-  } catch (error) {
-    console.warn('读取每日AI额度失败:', error);
-  }
-  return { date: getLocalDateKey(), usage: {} };
-}
-
-function saveDailyUsage(record) {
-  localStorage.setItem(DAILY_USAGE_KEY, JSON.stringify(record));
-}
 
 function refillTokens() {
   const now = Date.now();
@@ -67,59 +36,40 @@ function refillTokens() {
 
 /**
  * 尝试消费一次AI调用额度。
+ * 对话次数限制已移除，仅保留令牌桶防突发流量。
  * @param {object|null} user 当前登录用户；为空时按游客额度计算
  */
-export function tryConsumeToken(user = null) {
+export function tryConsumeToken() {
   refillTokens();
 
-  const record = loadDailyUsage();
-  const identity = getIdentity(user);
-  const used = record.usage[identity] || 0;
-  const dailyLimit = getDailyLimit(user);
-
-  if (used >= dailyLimit) {
-    return {
-      allowed: false,
-      reason: 'daily_quota',
-      remaining: 0,
-      dailyRemaining: 0,
-      dailyLimit,
-      retryAfterMs: 0,
-    };
-  }
-
+  // 令牌桶：防止短时间内大量并发请求
   if (tokens < 1) {
     const retryAfterMs = Math.ceil((1 - tokens) * BUCKET_CONFIG.refillInterval);
     return {
       allowed: false,
       reason: 'rate_limit',
       remaining: 0,
-      dailyRemaining: dailyLimit - used,
-      dailyLimit,
+      dailyRemaining: Infinity,
+      dailyLimit: Infinity,
       retryAfterMs,
     };
   }
 
   tokens -= 1;
-  record.usage[identity] = used + 1;
-  saveDailyUsage(record);
   sessionStats.totalRequests++;
 
   return {
     allowed: true,
     reason: null,
     remaining: Math.floor(tokens),
-    dailyRemaining: dailyLimit - used - 1,
-    dailyLimit,
+    dailyRemaining: Infinity,
+    dailyLimit: Infinity,
     retryAfterMs: 0,
   };
 }
 
-export function getRateLimitStatus(user = null) {
+export function getRateLimitStatus() {
   refillTokens();
-  const record = loadDailyUsage();
-  const used = record.usage[getIdentity(user)] || 0;
-  const dailyLimit = getDailyLimit(user);
 
   return {
     remaining: Math.floor(tokens),
@@ -127,8 +77,8 @@ export function getRateLimitStatus(user = null) {
     resetInMs: tokens < BUCKET_CONFIG.maxTokens
       ? Math.ceil((BUCKET_CONFIG.maxTokens - tokens) * BUCKET_CONFIG.refillInterval)
       : 0,
-    dailyRemaining: Math.max(0, dailyLimit - used),
-    dailyLimit,
+    dailyRemaining: Infinity,
+    dailyLimit: Infinity,
   };
 }
 

@@ -1,5 +1,5 @@
 // 预约 API - 开发环境走 JSON Server，生产环境走 localStorage
-import { useApi, get, post, patch, del } from './client';
+import { useApi, get, post, patch } from './client';
 
 const APTS_KEY = 'mindcare_appointments';
 

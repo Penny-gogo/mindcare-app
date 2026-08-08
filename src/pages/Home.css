@@ -414,6 +414,7 @@
 
 /* Quote Banner */
 .quote-banner {
+  display: none;
   padding: 40px 24px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   text-align: center;

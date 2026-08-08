@@ -452,6 +452,37 @@ export default function Knowledge() {
                       ))}
                     </div>
                   )}
+                  {ex.aiIntegration && (
+                    <div className="detail-section">
+                      <h4>🤖 AI 智能集成</h4>
+                      {ex.aiIntegration.applicableScenarios && (
+                        <div className="ai-item">
+                          <strong>适用场景：</strong>
+                          <ul className="ai-scenarios">
+                            {ex.aiIntegration.applicableScenarios.map((s, j) => (
+                              <li key={j}>{s}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {ex.aiIntegration.relatedModules && (
+                        <div className="ai-item">
+                          <strong>关联模块：</strong>
+                          <span className="ai-modules">
+                            {ex.aiIntegration.relatedModules.map((m, j) => (
+                              <span key={j} className="module-tag">{m}</span>
+                            ))}
+                          </span>
+                        </div>
+                      )}
+                      {ex.aiIntegration.suggestedResponse && (
+                        <div className="ai-item">
+                          <strong>建议回复：</strong>
+                          <p className="ai-response">{ex.aiIntegration.suggestedResponse}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

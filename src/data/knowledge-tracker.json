@@ -32,8 +32,8 @@
       "file": "src/data/knowledgeBase.js",
       "name": "核心知识库（EAP/CBT/MBSR/职场/危机干预等）",
       "type": "core",
-      "lastContentUpdate": "2026-08-04",
-      "lastChecked": "2026-08-08",
+      "lastContentUpdate": "2026-08-06",
+      "lastChecked": "2026-08-06",
       "updateFrequency": "biweekly",
       "priority": "high",
       "staleDays": 14,
@@ -87,7 +87,7 @@
       "name": "主流心理学技术流派",
       "type": "therapy",
       "lastContentUpdate": "2026-07-29",
-      "lastChecked": "2026-08-08",
+      "lastChecked": "2026-08-06",
       "updateFrequency": "monthly",
       "priority": "medium",
       "staleDays": 30,
@@ -99,7 +99,7 @@
       "name": "心理学家名人名言",
       "type": "reference",
       "lastContentUpdate": "2026-07-29",
-      "lastChecked": "2026-08-08",
+      "lastChecked": "2026-08-06",
       "updateFrequency": "monthly",
       "priority": "medium",
       "staleDays": 30,
@@ -111,7 +111,7 @@
       "name": "主流心理App评测",
       "type": "reference",
       "lastContentUpdate": "2026-07-25",
-      "lastChecked": "2026-08-08",
+      "lastChecked": "2026-08-06",
       "updateFrequency": "monthly",
       "priority": "low",
       "staleDays": 30,
@@ -123,7 +123,7 @@
       "name": "高校学术资源扩展",
       "type": "academic",
       "lastContentUpdate": "2026-07-25",
-      "lastChecked": "2026-08-08",
+      "lastChecked": "2026-08-06",
       "updateFrequency": "quarterly",
       "priority": "low",
       "staleDays": 90,
@@ -134,17 +134,22 @@
       "file": "src/data/knowledge/articleCollection.js",
       "name": "网络心理文章采集框架",
       "type": "platform",
-      "lastContentUpdate": "2026-08-04",
-      "lastChecked": "2026-08-08",
+      "lastContentUpdate": "2026-08-06",
+      "lastChecked": "2026-08-06",
       "updateFrequency": "weekly",
       "priority": "high",
       "staleDays": 7,
       "status": "fresh",
-      "articleCount": 11,
+      "articleCount": 14,
       "nextPlan": "新增：ACT接纳承诺疗法详解、中国心理学家名言补充、AI心理陪伴App评测"
     }
   },
   "updateLog": [
+    {
+      "date": "2026-08-06",
+      "action": "content_update",
+      "description": "知识库更新：新增3篇文章(决策困难/创伤恢复/睡眠卫生)，articleCollection 11→14篇；修复Chat.jsx getArticleEnhancement msg未定义bug；Knowledge.jsx补充aiIntegration展示"
+    },
     {
       "date": "2026-08-04",
       "action": "content_update",
@@ -192,16 +197,6 @@
     },
     {
       "date": "2026-08-06",
-      "action": "auto_check",
-      "description": "自动检查：0个模块过期"
-    },
-    {
-      "date": "2026-08-07",
-      "action": "auto_check",
-      "description": "自动检查：0个模块过期"
-    },
-    {
-      "date": "2026-08-08",
       "action": "auto_check",
       "description": "自动检查：0个模块过期"
     }

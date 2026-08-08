@@ -125,19 +125,9 @@ export async function streamAIResponse(userMessage, conversationHistory, knowled
     return;
   }
 
-  // 3. 客户端限流检查
+  // 3. 客户端限流检查（仅保留令牌桶防突发流量，每日额度已移除）
   const rateResult = tryConsumeToken(user);
   if (!rateResult.allowed) {
-    if (rateResult.reason === 'daily_quota') {
-      const message = user
-        ? `你今天的${rateResult.dailyLimit}次AI对话额度已用完，请明天再来。`
-        : `游客每天可免费对话${rateResult.dailyLimit}次，登录后每天可使用20次。`;
-      const quotaError = new Error(message);
-      quotaError.code = 'DAILY_QUOTA_EXCEEDED';
-      quotaError.requiresLogin = !user;
-      onError(quotaError);
-      return;
-    }
     const waitSec = Math.ceil(rateResult.retryAfterMs / 1000);
     onError(new Error(`请求过于频繁，请${waitSec}秒后再试`));
     return;
@@ -151,16 +141,20 @@ export async function streamAIResponse(userMessage, conversationHistory, knowled
 
   // 5. 构建请求
   const messages = buildMessages(userMessage, conversationHistory, knowledgeContext);
-  const apiUrl = isDev ? DEV_API_URL : CLOUD_FUNCTION_URL;
+  const apiUrl = isDev ? DEV_API_URL : `${CLOUD_FUNCTION_URL}/chat`;
   const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
 
   const requestHeaders = { 'Content-Type': 'application/json' };
-  // 开发环境通过Vite proxy，需要传DeepSeek API Key；生产环境传Supabase会话令牌。
+  // 开发环境通过Vite proxy，需要传DeepSeek API Key
+  // 生产环境传 CloudBase 登录凭证（x-cloudbase-credentials）
   if (isDev && apiKey) {
     requestHeaders['Authorization'] = `Bearer ${apiKey}`;
   } else if (!isDev) {
     const accessToken = await getAccessToken();
-    if (accessToken) requestHeaders['Authorization'] = `Bearer ${accessToken}`;
+    if (accessToken) {
+      // CloudBase 认证：通过自定义头传递登录凭证
+      requestHeaders['x-cloudbase-credentials'] = accessToken;
+    }
   }
 
   const requestBody = isDev
@@ -222,7 +216,7 @@ export async function streamAIResponse(userMessage, conversationHistory, knowled
             fullText += content;
             onChunk(fullText, false); // 正式内容
           }
-        } catch (e) {
+        } catch {
           // 忽略解析错误，继续处理下一行
         }
       }
@@ -264,7 +258,7 @@ export async function fetchAIResponse(userMessage, conversationHistory, knowledg
   }
 
   const messages = buildMessages(userMessage, conversationHistory, knowledgeContext);
-  const apiUrl = isDev ? DEV_API_URL : CLOUD_FUNCTION_URL;
+  const apiUrl = isDev ? DEV_API_URL : `${CLOUD_FUNCTION_URL}/chat`;
   const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
 
   const requestHeaders = { 'Content-Type': 'application/json' };
@@ -272,7 +266,9 @@ export async function fetchAIResponse(userMessage, conversationHistory, knowledg
     requestHeaders['Authorization'] = `Bearer ${apiKey}`;
   } else if (!isDev) {
     const accessToken = await getAccessToken();
-    if (accessToken) requestHeaders['Authorization'] = `Bearer ${accessToken}`;
+    if (accessToken) {
+      requestHeaders['x-cloudbase-credentials'] = accessToken;
+    }
   }
 
   const requestBody = isDev

@@ -74,6 +74,8 @@ export function AuthProvider({ children }) {
     hrbp: 'HRBP',
   };
 
+  // 匿名登录模式：loading 期间显示 null，但用户已自动登录
+  // 如需 loading 状态，可在 App 层处理
   if (loading) return null;
 
   return (

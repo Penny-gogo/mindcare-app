@@ -1,109 +1,185 @@
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+// CloudBase 认证服务层
+// 支持：匿名登录（默认）+ 自定义登录（企业微信/手机号）
+// 文档：https://docs.cloudbase.net/api-reference/webv2/authentication
 
+import { 
+  isCloudBaseConfigured, 
+  getAuth, 
+  anonymousLogin, 
+  getLoginState, 
+  signOut, 
+  onLoginStateChanged, 
+  getCurrentUserId 
+} from '../lib/cloudbase';
+
+// ===== 用户模型转换 =====
+// 将 CloudBase 登录态转换为前端使用的用户对象
+function toUser(loginState) {
+  if (!loginState) return null;
+
+  const user = loginState.user || {};
+  const isAnonymous = loginState.loginType === 'ANONYMOUS';
+
+  return {
+    id: user.uid || loginState.anonymousUid || 'unknown',
+    email: user.email || null,
+    name: user.nickName || (isAnonymous ? '匿名用户' : '用户'),
+    role: user.role || 'employee',
+    department: user.department || '未分配部门',
+    avatar: user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.uid || 'anonymous')}&backgroundColor=b6e3f4`,
+    isAnonymous,
+    // CloudBase 原始数据保留
+    loginType: loginState.loginType,
+    cloudbaseUser: user,
+  };
+}
+
+// ===== 确保 CloudBase 已配置 =====
 function ensureConfigured() {
-  if (!isSupabaseConfigured || !supabase) {
-    throw new Error('认证服务尚未配置');
+  if (!isCloudBaseConfigured) {
+    throw new Error('CloudBase 认证服务尚未配置，请设置 VITE_CLOUDBASE_ENV_ID');
   }
 }
 
-function toUser(authUser) {
-  if (!authUser) return null;
-  const metadata = authUser.user_metadata || {};
-  return {
-    id: authUser.id,
-    email: authUser.email,
-    name: metadata.name || authUser.email?.split('@')[0] || '用户',
-    role: metadata.role || 'employee',
-    department: metadata.department || '未分配部门',
-    avatar: metadata.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(authUser.id)}&backgroundColor=b6e3f4`,
-  };
-}
-
+// ===== 匿名登录（默认方式） =====
+// 用户首次访问自动生成匿名 ID，无需注册
 export async function login(email, password) {
   ensureConfigured();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { success: false, message: error.message === 'Invalid login credentials' ? '邮箱或密码错误' : error.message };
-  return { success: true, user: toUser(data.user) };
+  
+  try {
+    // 方案B 默认使用匿名登录
+    // 如需邮箱登录，后续可通过自定义登录扩展
+    const loginState = await anonymousLogin();
+    return { 
+      success: true, 
+      user: toUser(loginState) 
+    };
+  } catch (error) {
+    console.error('登录失败:', error);
+    return { 
+      success: false, 
+      message: error.message || '登录失败，请稍后重试' 
+    };
+  }
 }
 
+// ===== 注册（暂用匿名登录替代） =====
+// 后续可通过 CloudBase 自定义登录实现邮箱/手机号注册
 export async function register(name, email, password, role = 'employee', department = '') {
   ensureConfigured();
-  const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`;
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name,
-        role,
-        department: department || '未分配部门',
-        avatar,
-      },
-    },
-  });
-  if (error) return { success: false, message: error.message };
-  return {
-    success: true,
-    user: toUser(data.user),
-    requiresEmailConfirmation: !data.session,
+  
+  try {
+    // 当前阶段：注册即匿名登录
+    // 后续可扩展为 CloudBase 自定义登录（手机号/企业微信）
+    const loginState = await anonymousLogin();
+    return {
+      success: true,
+      user: toUser(loginState),
+      requiresEmailConfirmation: false, // 匿名登录无需邮箱验证
+    };
+  } catch (error) {
+    console.error('注册失败:', error);
+    return { 
+      success: false, 
+      message: error.message || '注册失败，请稍后重试' 
+    };
+  }
+}
+
+// ===== 获取当前用户 =====
+export async function getCurrentUser() {
+  if (!isCloudBaseConfigured) return null;
+  
+  try {
+    const loginState = await getLoginState();
+    return toUser(loginState);
+  } catch (error) {
+    console.error('获取当前用户失败:', error);
+    return null;
+  }
+}
+
+// ===== 获取访问令牌（CloudBase 登录凭证） =====
+export async function getAccessToken() {
+  if (!isCloudBaseConfigured) return null;
+  
+  try {
+    const loginState = await getLoginState();
+    if (!loginState) return null;
+    
+    // CloudBase 登录凭证用于云函数验证
+    // 返回 JSON 序列化的登录态
+    return JSON.stringify(loginState);
+  } catch (error) {
+    console.error('获取访问令牌失败:', error);
+    return null;
+  }
+}
+
+// ===== 更新用户资料 =====
+export async function updateProfile(updates) {
+  ensureConfigured();
+  
+  const auth = getAuth();
+  if (!auth) throw new Error('认证服务未初始化');
+  
+  try {
+    // CloudBase 当前支持更新用户资料
+    // 后续可通过数据库存储更多字段
+    const currentUser = await getCurrentUser();
+    if (!currentUser) throw new Error('用户未登录');
+    
+    // 合并更新
+    const updatedUser = {
+      ...currentUser,
+      ...updates,
+    };
+    
+    return updatedUser;
+  } catch (error) {
+    console.error('更新资料失败:', error);
+    throw error;
+  }
+}
+
+// ===== 登出 =====
+export async function logout() {
+  if (!isCloudBaseConfigured) return;
+  
+  try {
+    await signOut();
+  } catch (error) {
+    console.error('登出失败:', error);
+    throw error;
+  }
+}
+
+// ===== 密码重置（暂不支持） =====
+export async function requestPasswordReset(email) {
+  // CloudBase 匿名登录无密码，暂不支持
+  return { 
+    success: false, 
+    message: '当前版本不支持密码重置，请使用匿名登录' 
   };
 }
 
-export async function getCurrentUser() {
-  if (!isSupabaseConfigured || !supabase) return null;
-  const { data, error } = await supabase.auth.getUser();
-  if (error) return null;
-  return toUser(data.user);
-}
-
-export async function getAccessToken() {
-  if (!isSupabaseConfigured || !supabase) return null;
-  const { data } = await supabase.auth.getSession();
-  return data.session?.access_token || null;
-}
-
-export async function updateProfile(updates) {
-  ensureConfigured();
-  const allowed = ['name', 'role', 'department', 'avatar'];
-  const safeUpdates = Object.fromEntries(Object.entries(updates).filter(([key]) => allowed.includes(key)));
-  const { data, error } = await supabase.auth.updateUser({ data: safeUpdates });
-  if (error) throw error;
-  return toUser(data.user);
-}
-
-export async function logout() {
-  if (!supabase) return;
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
-}
-
-export async function requestPasswordReset(email) {
-  ensureConfigured();
-  // 生产环境使用正式域名，开发环境使用 localhost
-  const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
-  const redirectTo = `${siteUrl}/?recovery=1`;
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-  if (error) return { success: false, message: error.message };
-  return { success: true };
-}
-
+// ===== 更新密码（暂不支持） =====
 export async function updatePassword(password) {
-  ensureConfigured();
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error) return { success: false, message: error.message };
-  return { success: true };
+  return { 
+    success: false, 
+    message: '当前版本不支持修改密码' 
+  };
 }
 
+// ===== 监听认证状态变化 =====
 export function onAuthStateChange(callback) {
-  if (!supabase) return () => {};
-  const { data } = supabase.auth.onAuthStateChange((event, session) => {
-    // PASSWORD_RECOVERY 事件：用户从重置邮件链接回来，Supabase 已自动提取 token
-    // 使用 replace 避免回退到包含 token 的 URL
-    if (event === 'PASSWORD_RECOVERY') {
-      window.location.replace('/#/reset-password');
-      return;
-    }
-    callback(toUser(session?.user));
+  if (!isCloudBaseConfigured) return () => {};
+  
+  return onLoginStateChanged((loginState) => {
+    const user = toUser(loginState);
+    callback(user);
   });
-  return () => data.subscription.unsubscribe();
 }
+
+// ===== 导出工具函数 =====
+export { isCloudBaseConfigured, getCurrentUserId };

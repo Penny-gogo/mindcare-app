@@ -33,7 +33,7 @@
       "name": "核心知识库（EAP/CBT/MBSR/职场/危机干预等）",
       "type": "core",
       "lastContentUpdate": "2026-08-06",
-      "lastChecked": "2026-08-27",
+      "lastChecked": "2026-08-28",
       "updateFrequency": "biweekly",
       "priority": "high",
       "staleDays": 14,
@@ -87,11 +87,11 @@
       "name": "主流心理学技术流派",
       "type": "therapy",
       "lastContentUpdate": "2026-07-29",
-      "lastChecked": "2026-08-27",
+      "lastChecked": "2026-08-28",
       "updateFrequency": "monthly",
       "priority": "medium",
       "staleDays": 30,
-      "status": "aging",
+      "status": "stale",
       "nextPlan": "补充ACT接纳承诺疗法详细内容、更新EMDR最新适应症"
     },
     "psychologistQuotes": {
@@ -99,11 +99,11 @@
       "name": "心理学家名人名言",
       "type": "reference",
       "lastContentUpdate": "2026-07-29",
-      "lastChecked": "2026-08-27",
+      "lastChecked": "2026-08-28",
       "updateFrequency": "monthly",
       "priority": "medium",
       "staleDays": 30,
-      "status": "aging",
+      "status": "stale",
       "nextPlan": "补充中国心理学家名言（张厚粲、林崇德等）"
     },
     "mentalHealthApps": {
@@ -111,7 +111,7 @@
       "name": "主流心理App评测",
       "type": "reference",
       "lastContentUpdate": "2026-07-25",
-      "lastChecked": "2026-08-27",
+      "lastChecked": "2026-08-28",
       "updateFrequency": "monthly",
       "priority": "low",
       "staleDays": 30,
@@ -123,7 +123,7 @@
       "name": "高校学术资源扩展",
       "type": "academic",
       "lastContentUpdate": "2026-07-25",
-      "lastChecked": "2026-08-27",
+      "lastChecked": "2026-08-28",
       "updateFrequency": "quarterly",
       "priority": "low",
       "staleDays": 90,
@@ -135,7 +135,7 @@
       "name": "网络心理文章采集框架",
       "type": "platform",
       "lastContentUpdate": "2026-08-06",
-      "lastChecked": "2026-08-27",
+      "lastChecked": "2026-08-28",
       "updateFrequency": "weekly",
       "priority": "high",
       "staleDays": 7,
@@ -294,6 +294,11 @@
       "date": "2026-08-27",
       "action": "auto_check",
       "description": "自动检查：3个模块过期"
+    },
+    {
+      "date": "2026-08-28",
+      "action": "auto_check",
+      "description": "自动检查：5个模块过期"
     }
   ],
   "collectionBacklog": {
